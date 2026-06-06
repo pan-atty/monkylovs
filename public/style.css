@@ -1,0 +1,443 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #ffdde1, #ee9ca7);
+    min-height: 100vh;
+    padding: 30px;
+    color: #333;
+}
+
+h1 {
+    text-align: center;
+    color: #b3005e;
+    font-size: 42px;
+    margin-bottom: 10px;
+}
+
+h2 {
+    text-align: center;
+    color: #7a0045;
+}
+
+form {
+    background: white;
+    max-width: 500px;
+    margin: 25px auto;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+label {
+    font-weight: bold;
+    color: #b3005e;
+}
+
+input,
+textarea {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    margin-bottom: 15px;
+    border: 2px solid #ffc1d6;
+    border-radius: 12px;
+    font-size: 15px;
+    outline: none;
+}
+
+input:focus,
+textarea:focus {
+    border-color: #ff4f9a;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 14px;
+    background: #ff4f9a;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #d9006c;
+}
+
+hr {
+    border: none;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.6);
+    margin: 30px 0;
+}
+
+#listaEventos {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+#listaEventos div {
+    background: white;
+    margin: 18px 0;
+    padding: 20px;
+    border-radius: 18px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+    border-left: 8px solid #ff4f9a;
+}
+
+#listaEventos h3 {
+    color: #b3005e;
+    font-size: 25px;
+    margin-top: 0;
+}
+
+#listaEventos p {
+    font-size: 16px;
+    margin: 8px 0;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 32px;
+    }
+
+    form {
+        padding: 20px;
+    }
+}
+
+.fechas-importantes,
+.calendario {
+    max-width: 800px;
+    margin: 25px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 22px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.fecha-card {
+    background: #fff0f6;
+    border-left: 8px solid #ff4f9a;
+    padding: 15px;
+    border-radius: 15px;
+    margin: 12px 0;
+}
+
+.evento-card {
+    position: relative;
+}
+
+.evento-card h3 {
+    font-size: 26px;
+}
+
+.btn-eliminar {
+    margin-top: 12px;
+    background: #ff2e63;
+}
+
+.btn-eliminar:hover {
+    background: #b8003b;
+}
+
+#calendario h3 {
+    text-align: center;
+    color: #b3005e;
+    font-size: 26px;
+    text-transform: capitalize;
+}
+
+.dias-semana,
+.grid-calendario {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.dias-semana span {
+    text-align: center;
+    font-weight: bold;
+    color: #b3005e;
+}
+
+.dia,
+.dia-vacio {
+    min-height: 90px;
+    background: #fff0f6;
+    border-radius: 14px;
+    padding: 8px;
+    font-size: 14px;
+}
+
+.dia strong {
+    color: #b3005e;
+}
+
+.dia p {
+    background: #ff4f9a;
+    color: white;
+    padding: 4px;
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+.album {
+    max-width: 900px;
+    margin: 25px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 22px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+#galeria {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-top: 20px;
+}
+
+.foto-card {
+    background: #fff0f6;
+    border-radius: 18px;
+    padding: 12px;
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+}
+
+.foto-card img {
+    width: 100%;
+    height: auto;
+    border-radius: 15px;
+}
+
+.foto-card p {
+    margin: 8px 0;
+}
+
+.visor {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    background: rgba(0,0,0,.9);
+    justify-content: center;
+    align-items: center;
+}
+
+.visor img {
+    max-width: 95%;
+    max-height: 95%;
+    border-radius: 20px;
+}
+
+#cerrar {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 35px;
+    cursor: pointer;
+}
+
+.btn-eliminar-foto {
+
+    width: 100%;
+    margin-top: 10px;
+
+    background: #ff2e63;
+}
+
+.btn-eliminar-foto:hover {
+
+    background: #b8003b;
+}
+
+.login-box {
+    max-width: 420px;
+    margin: 100px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 22px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.barra-usuario {
+    max-width: 800px;
+    margin: 15px auto;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+#usuarioConectado {
+    font-weight: bold;
+    color: #b3005e;
+}
+
+#btnCerrarSesion {
+    width: auto;
+    padding: 10px 18px;
+    background: #ff2e63;
+}
+
+#btnCerrarSesion:hover {
+    background: #b8003b;
+}
+
+.notitas {
+
+    max-width: 900px;
+    margin: 25px auto;
+
+    background: white;
+
+    padding: 25px;
+
+    border-radius: 22px;
+
+    box-shadow: 0 10px 25px rgba(0,0,0,.15);
+}
+
+.nota-card {
+
+    background: #fff0f6;
+
+    padding: 15px;
+
+    border-radius: 15px;
+
+    margin-top: 12px;
+
+    border-left: 6px solid #ff4f9a;
+}
+
+.nota-card h4 {
+
+    color: #b3005e;
+
+    margin-bottom: 8px;
+}
+
+.perfil-pareja {
+    max-width: 850px;
+    margin: 25px auto;
+    padding: 35px 25px;
+    background: linear-gradient(135deg, #fff0f6, #ffffff);
+    border-radius: 25px;
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0,0,0,.15);
+}
+
+.perfil-pareja h2 {
+    font-size: 42px;
+    color: #b3005e;
+    margin-bottom: 10px;
+}
+
+.perfil-pareja h3 {
+    font-size: 28px;
+    color: #ff2e63;
+    margin-top: 5px;
+}
+
+.contador-amor {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    margin-top: 25px;
+}
+
+.contador-amor div {
+    background: white;
+    padding: 25px;
+    border-radius: 22px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
+
+.contador-amor span {
+    display: block;
+    font-size: 44px;
+    font-weight: bold;
+    color: #ff4f9a;
+}
+
+.contador-amor p {
+    font-weight: bold;
+    color: #7a0045;
+}
+
+@media (max-width: 600px) {
+    .contador-amor {
+        grid-template-columns: 1fr;
+    }
+
+    .perfil-pareja h2 {
+        font-size: 32px;
+    }
+}
+
+.lugares,
+.notificaciones {
+    max-width: 900px;
+    margin: 25px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 22px;
+    box-shadow: 0 10px 25px rgba(0,0,0,.15);
+}
+
+.lugar-card {
+    background: #fff0f6;
+    padding: 15px;
+    border-radius: 15px;
+    margin-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 6px solid #ff4f9a;
+}
+
+.lugar-card label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.lugar-card input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
+.lugar-card button {
+    width: auto;
+    padding: 8px 12px;
+    background: #ff2e63;
+}
+
+.lugar-card.visitado span {
+    text-decoration: line-through;
+    color: gray;
+}
+
+.aviso-card {
+    background: #fff0f6;
+    padding: 15px;
+    border-radius: 15px;
+    margin-top: 12px;
+    border-left: 6px solid #ff4f9a;
+}

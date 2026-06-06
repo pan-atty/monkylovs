@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title> Agenda D Monkys ❤️</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/mnkys.png">
+<meta name="theme-color" content="#ff4f9a">
+</head>
+<body>
+
+<h1>Nuestra Agenda ❤️</h1>
+
+<div class="barra-usuario">
+    <span id="usuarioConectado"></span>
+    <button id="btnCerrarSesion">🚪 Cerrar sesión</button>
+</div>
+
+<section class="perfil-pareja">
+    <h2>Michel ❤️ Len</h2>
+
+    <p>Juntos desde:</p>
+    <h3>19/06/2024</h3>
+
+    <div class="contador-amor">
+        <div>
+            <span id="diasJuntos">0</span>
+            <p>Días juntos ❤️</p>
+        </div>
+
+        <div>
+            <span id="diasAniversario">0</span>
+            <p>Días para aniversario ⏳</p>
+        </div>
+    </div>
+</section>
+
+<section class="calendario">
+    <h2>📅 Calendario mensual</h2>
+    <div id="calendario"></div>
+</section>
+
+<form id="formAgenda">
+    <label>Fecha:</label>
+    <input type="date" id="fecha" required>
+
+    <br><br>
+
+    <label>Hora:</label>
+    <input type="time" id="hora" required>
+
+    <br><br>
+
+    <label>Lugar:</label>
+    <input type="text" id="lugar" required>
+
+    <br><br>
+
+    <label>Actividad:</label>
+    <input type="text" id="actividad" required>
+
+    <br><br>
+
+    <label>Otros:</label>
+    <br>
+    <textarea id="otros" rows="5" cols="40"></textarea>
+
+    <br><br>
+
+    <button type="submit">Guardar</button>
+</form>
+
+<hr>
+
+<h2>Eventos guardados</h2>
+
+<div id="listaEventos"></div>
+
+<section class="album">
+    <h2>🐵 Monky Album ❤️</h2>
+
+    <form id="formFoto" enctype="multipart/form-data">
+        <label>Subir imagen:</label>
+        <input type="file" id="imagen" name="imagen" accept="image/*" required>
+
+        <label>Fecha:</label>
+        <input type="date" id="fechaFoto" required>
+
+        <label>Lugar:</label>
+        <input type="text" id="lugarFoto" placeholder="Lugar donde fue tomada" required>
+
+        <button type="submit">Subir imagen</button>
+    </form>
+
+    <div id="galeria"></div>
+</section>
+<div id="visor" class="visor">
+    <span id="cerrar">✖</span>
+    <img id="imagenGrande">
+</div>
+
+<section class="notitas">
+    <h2>💌 Notitas de Amor</h2>
+
+    <form id="formNota">
+
+        <textarea
+            id="mensajeNota"
+            placeholder="Escribe algo bonito ❤️"
+            required
+        ></textarea>
+
+        <button type="submit">
+            Enviar 💌
+        </button>
+
+    </form>
+
+    <div id="listaNotas"></div>
+</section>
+
+<section class="lugares">
+    <h2>🍔 Lugares por visitar</h2>
+
+    <form id="formLugar">
+        <input 
+            type="text" 
+            id="nombreLugar" 
+            placeholder="Ejemplo: Teleférico de Orizaba" 
+            required
+        >
+
+        <button type="submit">Agregar lugar 🍔</button>
+    </form>
+
+    <div id="listaLugares"></div>
+</section>
+
+<section class="notificaciones">
+    <h2>🔔 Notificaciones</h2>
+    <button id="btnNotificaciones">Activar notificaciones</button>
+    <div id="avisosEventos"></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+</body>
+</html>
+
