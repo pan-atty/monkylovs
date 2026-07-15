@@ -1,32 +1,82 @@
-const SUPABASE_URL =
-    "https://zxsnfryvwzwvmlcwdfzg.supabase.co";
+let supabaseRealtime = null;
 
-const SUPABASE_KEY =
-    "sb_publishable_lb9rExXwTs14WIhuSDEfjg_PIC0-3-E";
+function escaparHtml(valor) {
+    const mapa = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#039;"
+    };
 
-const supabaseRealtime =
-    supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
+    return String(valor ?? "").replace(/[&<>"']/g, caracter => mapa[caracter]);
+}
+
+async function obtenerJson(url, opciones = {}) {
+    const respuesta = await fetch(url, opciones);
+    let resultado = {};
+
+    try {
+        resultado = await respuesta.json();
+    } catch (error) {
+        resultado = {};
+    }
+
+    if (respuesta.status === 401) {
+        window.location.href = "login.html";
+        throw new Error("Sesión expirada. Inicia sesión de nuevo.");
+    }
+
+    if (!respuesta.ok) {
+        const detalle = resultado.detalle ? `\n${resultado.detalle}` : "";
+        throw new Error(`${resultado.mensaje || "Ocurrió un error"}${detalle}`);
+    }
+
+    return resultado;
+}
+
+function mostrarError(error) {
+    console.error(error);
+    alert(error.message || "Ocurrió un error inesperado");
+}
+
+function listaSegura(datos) {
+    return Array.isArray(datos) ? datos : [];
+}
 
 async function verificarLogin() {
-    const respuesta = await fetch("/verificar");
-    const resultado = await respuesta.json();
+    const resultado = await obtenerJson("/verificar");
 
     if (!resultado.logueado) {
         window.location.href = "login.html";
-        return;
+        return false;
     }
 
     document.getElementById("usuarioConectado").textContent =
         `Conectado como: ${resultado.usuario} ❤️`;
+
+    return true;
 }
 
-verificarLogin();
+function registrarEventosFormulario() {
+    document.getElementById("formAgenda").addEventListener("submit", guardarEvento);
+    document.getElementById("formFoto").addEventListener("submit", subirFoto);
+    document.getElementById("formNota").addEventListener("submit", guardarNota);
+    document.getElementById("formLugar").addEventListener("submit", guardarLugar);
+    document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
+    document.getElementById("btnNotificaciones").addEventListener("click", activarNotificaciones);
+    document.getElementById("cerrar").addEventListener("click", cerrarVisor);
 
-document.getElementById("formAgenda").addEventListener("submit", async function(event) {
-    event.preventDefault();
+    document.addEventListener("click", function(evento) {
+        if (evento.target.matches(".foto-card img")) {
+            document.getElementById("visor").style.display = "flex";
+            document.getElementById("imagenGrande").src = evento.target.src;
+        }
+    });
+}
+
+async function guardarEvento(evento) {
+    evento.preventDefault();
 
     const datos = {
         fecha: document.getElementById("fecha").value,
@@ -36,51 +86,55 @@ document.getElementById("formAgenda").addEventListener("submit", async function(
         otros: document.getElementById("otros").value
     };
 
-    const respuesta = await fetch("/guardar", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(datos)
-    });
+    try {
+        const resultado = await obtenerJson("/guardar", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datos)
+        });
 
-    const resultado = await respuesta.json();
-
-    alert(resultado.mensaje);
-
-    document.getElementById("formAgenda").reset();
-
-    cargarEventos();
-});
+        alert(resultado.mensaje);
+        document.getElementById("formAgenda").reset();
+        await cargarEventos();
+    } catch (error) {
+        mostrarError(error);
+    }
+}
 
 async function cargarEventos() {
-    const respuesta = await fetch("/eventos");
-    const eventos = await respuesta.json();
-
     const lista = document.getElementById("listaEventos");
-    lista.innerHTML = "";
 
-    eventos.forEach(evento => {
-        const div = document.createElement("div");
-        div.classList.add("evento-card");
+    try {
+        const eventos = listaSegura(await obtenerJson("/eventos"));
+        lista.innerHTML = "";
 
-        div.innerHTML = `
-            <h3>❤️ ${evento.actividad}</h3>
-            <p>📅 <b>Fecha:</b> ${evento.fecha}</p>
-            <p>🕒 <b>Hora:</b> ${evento.hora}</p>
-            <p>📍 <b>Lugar:</b> ${evento.lugar}</p>
-            <p>💌 <b>Otros:</b> ${evento.otros || "Sin detalles"}</p>
+        eventos.forEach(evento => {
+            const div = document.createElement("div");
+            div.classList.add("evento-card");
 
-            <button class="btn-eliminar" onclick="eliminarEvento(${evento.id})">
-                🗑️ Eliminar
-            </button>
-        `;
+            div.innerHTML = `
+                <h3>❤️ ${escaparHtml(evento.actividad)}</h3>
+                <p>📅 <b>Fecha:</b> ${escaparHtml(evento.fecha)}</p>
+                <p>🕒 <b>Hora:</b> ${escaparHtml(evento.hora)}</p>
+                <p>📍 <b>Lugar:</b> ${escaparHtml(evento.lugar)}</p>
+                <p>💌 <b>Otros:</b> ${escaparHtml(evento.otros || "Sin detalles")}</p>
 
-        lista.appendChild(div);
-    });
+                <button class="btn-eliminar" onclick="eliminarEvento(${Number(evento.id)})">
+                    🗑️ Eliminar
+                </button>
+            `;
 
-    crearCalendario(eventos);
-    revisarEventosProximos();
+            lista.appendChild(div);
+        });
+
+        crearCalendario(eventos);
+        revisarEventosProximos(false, eventos);
+    } catch (error) {
+        lista.innerHTML = `<p class="estado-error">${escaparHtml(error.message)}</p>`;
+        console.error(error);
+    }
 }
 
 async function eliminarEvento(id) {
@@ -88,15 +142,16 @@ async function eliminarEvento(id) {
 
     if (!confirmar) return;
 
-    const respuesta = await fetch(`/eliminar/${id}`, {
-        method: "DELETE"
-    });
+    try {
+        const resultado = await obtenerJson(`/eliminar/${id}`, {
+            method: "DELETE"
+        });
 
-    const resultado = await respuesta.json();
-
-    alert(resultado.mensaje);
-
-    cargarEventos();
+        alert(resultado.mensaje);
+        await cargarEventos();
+    } catch (error) {
+        mostrarError(error);
+    }
 }
 
 function crearCalendario(eventos) {
@@ -153,7 +208,7 @@ function crearCalendario(eventos) {
         celda.innerHTML = `<strong>${dia}</strong>`;
 
         eventosDelDia.forEach(evento => {
-            celda.innerHTML += `<p>❤️ ${evento.actividad}</p>`;
+            celda.innerHTML += `<p>❤️ ${escaparHtml(evento.actividad)}</p>`;
         });
 
         grid.appendChild(celda);
@@ -162,10 +217,8 @@ function crearCalendario(eventos) {
     calendario.appendChild(grid);
 }
 
-cargarEventos();
-
-document.getElementById("formFoto").addEventListener("submit", async function(event) {
-    event.preventDefault();
+async function subirFoto(evento) {
+    evento.preventDefault();
 
     const archivo = document.getElementById("imagen").files[0];
 
@@ -180,129 +233,127 @@ document.getElementById("formFoto").addEventListener("submit", async function(ev
     formData.append("fecha", document.getElementById("fechaFoto").value);
     formData.append("lugar", document.getElementById("lugarFoto").value);
 
-    const respuesta = await fetch("/subir-foto", {
-        method: "POST",
-        body: formData
-    });
+    try {
+        const resultado = await obtenerJson("/subir-foto", {
+            method: "POST",
+            body: formData
+        });
 
-    const resultado = await respuesta.json();
-
-    alert(resultado.mensaje);
-
-    document.getElementById("formFoto").reset();
-
-    cargarFotos();
-});
-
-async function cargarFotos() {
-    const respuesta = await fetch("/fotos");
-    const fotos = await respuesta.json();
-
-    const galeria = document.getElementById("galeria");
-    galeria.innerHTML = "";
-
-    fotos.forEach(foto => {
-        const div = document.createElement("div");
-        div.classList.add("foto-card");
-
-        div.innerHTML = `
-            <img src="${foto.url}" alt="Foto del álbum">
-
-            <p>📅 <b>Fecha:</b> ${foto.fecha}</p>
-            <p>📍 <b>Lugar:</b> ${foto.lugar}</p>
-
-            <button
-                class="btn-eliminar-foto"
-                onclick="eliminarFoto(${foto.id})"
-            >
-                🗑️ Eliminar foto
-            </button>
-        `;
-
-        galeria.appendChild(div);
-    });
+        alert(resultado.mensaje);
+        document.getElementById("formFoto").reset();
+        await cargarFotos();
+    } catch (error) {
+        mostrarError(error);
+    }
 }
 
-cargarFotos();
+async function cargarFotos() {
+    const galeria = document.getElementById("galeria");
+
+    try {
+        const fotos = listaSegura(await obtenerJson("/fotos"));
+        galeria.innerHTML = "";
+
+        fotos.forEach(foto => {
+            const div = document.createElement("div");
+            div.classList.add("foto-card");
+
+            div.innerHTML = `
+                <img src="${escaparHtml(foto.url)}" alt="Foto del álbum">
+
+                <p>📅 <b>Fecha:</b> ${escaparHtml(foto.fecha)}</p>
+                <p>📍 <b>Lugar:</b> ${escaparHtml(foto.lugar)}</p>
+
+                <button
+                    class="btn-eliminar-foto"
+                    onclick="eliminarFoto(${Number(foto.id)})"
+                >
+                    🗑️ Eliminar foto
+                </button>
+            `;
+
+            galeria.appendChild(div);
+        });
+    } catch (error) {
+        galeria.innerHTML = `<p class="estado-error">${escaparHtml(error.message)}</p>`;
+        console.error(error);
+    }
+}
 
 async function eliminarFoto(id) {
     const confirmar = confirm("¿Desean eliminar esta foto?");
 
     if (!confirmar) return;
 
-    const respuesta = await fetch(`/eliminar-foto/${id}`, {
-        method: "DELETE"
-    });
+    try {
+        const resultado = await obtenerJson(`/eliminar-foto/${id}`, {
+            method: "DELETE"
+        });
 
-    const resultado = await respuesta.json();
-
-    alert(resultado.mensaje);
-
-    cargarFotos();
+        alert(resultado.mensaje);
+        await cargarFotos();
+    } catch (error) {
+        mostrarError(error);
+    }
 }
 
-document.addEventListener("click", function(e) {
-    if (e.target.matches(".foto-card img")) {
-        document.getElementById("visor").style.display = "flex";
-        document.getElementById("imagenGrande").src = e.target.src;
-    }
-});
-
-document.getElementById("cerrar").addEventListener("click", function() {
+function cerrarVisor() {
     document.getElementById("visor").style.display = "none";
-});
+}
 
-document.getElementById("btnCerrarSesion").addEventListener("click", async function() {
+async function cerrarSesion() {
     await fetch("/logout", {
         method: "POST"
     });
 
     window.location.href = "login.html";
-});
+}
 
-document.getElementById("formNota").addEventListener("submit", async function(e) {
-    e.preventDefault();
+async function guardarNota(evento) {
+    evento.preventDefault();
 
     const mensaje = document.getElementById("mensajeNota").value;
 
-    const respuesta = await fetch("/nota", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ mensaje })
-    });
+    try {
+        const resultado = await obtenerJson("/nota", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ mensaje })
+        });
 
-    const resultado = await respuesta.json();
-
-    alert(resultado.mensaje);
-
-    document.getElementById("mensajeNota").value = "";
-
-    cargarNotas();
-});
-
-async function cargarNotas() {
-    const respuesta = await fetch("/notas");
-    const notas = await respuesta.json();
-
-    const lista = document.getElementById("listaNotas");
-    lista.innerHTML = "";
-
-    notas.forEach(nota => {
-        const div = document.createElement("div");
-        div.classList.add("nota-card");
-
-        div.innerHTML = `
-            <h4>${nota.usuario} ❤️</h4>
-            <p>${nota.mensaje}</p>
-        `;
-
-        lista.appendChild(div);
-    });
+        alert(resultado.mensaje);
+        document.getElementById("mensajeNota").value = "";
+        await cargarNotas();
+    } catch (error) {
+        mostrarError(error);
+    }
 }
 
-cargarNotas();
+async function cargarNotas() {
+    const lista = document.getElementById("listaNotas");
+
+    try {
+        const notas = listaSegura(await obtenerJson("/notas"));
+        lista.innerHTML = "";
+
+        notas.forEach(nota => {
+            const div = document.createElement("div");
+            div.classList.add("nota-card");
+
+            div.innerHTML = `
+                <h4>${escaparHtml(nota.usuario)} ❤️</h4>
+                <p>${escaparHtml(nota.mensaje)}</p>
+            `;
+
+            lista.appendChild(div);
+        });
+    } catch (error) {
+        lista.innerHTML = `<p class="estado-error">${escaparHtml(error.message)}</p>`;
+        console.error(error);
+    }
+}
 
 function cargarPerfilPareja() {
     const fechaInicio = new Date("2024-06-19");
@@ -325,76 +376,82 @@ function cargarPerfilPareja() {
     document.getElementById("diasAniversario").textContent = diasAniversario;
 }
 
-cargarPerfilPareja();
-
-document.getElementById("formLugar").addEventListener("submit", async function(e) {
-    e.preventDefault();
+async function guardarLugar(evento) {
+    evento.preventDefault();
 
     const nombre = document.getElementById("nombreLugar").value;
 
-    const respuesta = await fetch("/lugar", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ nombre })
-    });
+    try {
+        const resultado = await obtenerJson("/lugar", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ nombre })
+        });
 
-    const resultado = await respuesta.json();
-
-    alert(resultado.mensaje);
-
-    document.getElementById("formLugar").reset();
-
-    cargarLugares();
-});
+        alert(resultado.mensaje);
+        document.getElementById("formLugar").reset();
+        await cargarLugares();
+    } catch (error) {
+        mostrarError(error);
+    }
+}
 
 async function cargarLugares() {
-    const respuesta = await fetch("/lugares");
-    const lugares = await respuesta.json();
-
     const lista = document.getElementById("listaLugares");
-    lista.innerHTML = "";
 
-    lugares.forEach(lugar => {
-        const div = document.createElement("div");
-        div.classList.add("lugar-card");
+    try {
+        const lugares = listaSegura(await obtenerJson("/lugares"));
+        lista.innerHTML = "";
 
-        if (lugar.visitado === true || lugar.visitado === 1) {
-            div.classList.add("visitado");
-        }
+        lugares.forEach(lugar => {
+            const div = document.createElement("div");
+            div.classList.add("lugar-card");
 
-        div.innerHTML = `
-            <label>
-                <input 
-                    type="checkbox" 
-                    ${(lugar.visitado === true || lugar.visitado === 1) ? "checked" : ""}
-                    onchange="cambiarEstadoLugar(${lugar.id}, this.checked)"
-                >
-                <span>${lugar.nombre}</span>
-            </label>
+            if (lugar.visitado === true || lugar.visitado === 1) {
+                div.classList.add("visitado");
+            }
 
-            <button onclick="eliminarLugar(${lugar.id})">
-                🗑️
-            </button>
-        `;
+            div.innerHTML = `
+                <label>
+                    <input
+                        type="checkbox"
+                        ${(lugar.visitado === true || lugar.visitado === 1) ? "checked" : ""}
+                        onchange="cambiarEstadoLugar(${Number(lugar.id)}, this.checked)"
+                    >
+                    <span>${escaparHtml(lugar.nombre)}</span>
+                </label>
 
-        lista.appendChild(div);
-    });
+                <button onclick="eliminarLugar(${Number(lugar.id)})">
+                    🗑️
+                </button>
+            `;
+
+            lista.appendChild(div);
+        });
+    } catch (error) {
+        lista.innerHTML = `<p class="estado-error">${escaparHtml(error.message)}</p>`;
+        console.error(error);
+    }
 }
 
 async function cambiarEstadoLugar(id, checked) {
-    await fetch(`/lugar/${id}`, {
-        method: "PUT",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            visitado: checked
-        })
-    });
+    try {
+        await obtenerJson(`/lugar/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                visitado: checked
+            })
+        });
 
-    cargarLugares();
+        await cargarLugares();
+    } catch (error) {
+        mostrarError(error);
+    }
 }
 
 async function eliminarLugar(id) {
@@ -402,20 +459,19 @@ async function eliminarLugar(id) {
 
     if (!confirmar) return;
 
-    const respuesta = await fetch(`/lugar/${id}`, {
-        method: "DELETE"
-    });
+    try {
+        const resultado = await obtenerJson(`/lugar/${id}`, {
+            method: "DELETE"
+        });
 
-    const resultado = await respuesta.json();
-
-    alert(resultado.mensaje);
-
-    cargarLugares();
+        alert(resultado.mensaje);
+        await cargarLugares();
+    } catch (error) {
+        mostrarError(error);
+    }
 }
 
-cargarLugares();
-
-document.getElementById("btnNotificaciones").addEventListener("click", async function() {
+async function activarNotificaciones() {
     if (!("Notification" in window)) {
         alert("Tu navegador no soporta notificaciones");
         return;
@@ -429,18 +485,25 @@ document.getElementById("btnNotificaciones").addEventListener("click", async fun
     } else {
         alert("No se activaron las notificaciones");
     }
-});
+}
 
-async function revisarEventosProximos(mostrarNotificacion = false) {
-    const respuesta = await fetch("/eventos");
-    const eventos = await respuesta.json();
+async function revisarEventosProximos(mostrarNotificacion = false, eventosCargados = null) {
+    let eventos = eventosCargados;
+
+    try {
+        if (!eventos) {
+            eventos = listaSegura(await obtenerJson("/eventos"));
+        }
+    } catch (error) {
+        console.error(error);
+        return;
+    }
 
     const hoy = new Date();
     const manana = new Date();
     manana.setDate(hoy.getDate() + 1);
 
     const fechaManana = manana.toISOString().split("T")[0];
-
     const avisos = document.getElementById("avisosEventos");
     avisos.innerHTML = "";
 
@@ -448,9 +511,9 @@ async function revisarEventosProximos(mostrarNotificacion = false) {
         if (evento.fecha === fechaManana) {
             avisos.innerHTML += `
                 <div class="aviso-card">
-                    🔔 Mañana tienen: <b>${evento.actividad}</b><br>
-                    🕒 ${evento.hora}<br>
-                    📍 ${evento.lugar}
+                    🔔 Mañana tienen: <b>${escaparHtml(evento.actividad)}</b><br>
+                    🕒 ${escaparHtml(evento.hora)}<br>
+                    📍 ${escaparHtml(evento.lugar)}
                 </div>
             `;
 
@@ -467,79 +530,103 @@ async function revisarEventosProximos(mostrarNotificacion = false) {
     });
 }
 
-revisarEventosProximos();
+async function activarTiempoReal() {
+    if (!window.supabase) {
+        console.log("Realtime no disponible: librería de Supabase no cargada");
+        return;
+    }
 
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js")
-        .then(() => {
-            console.log("Service Worker registrado");
-        })
-        .catch(error => {
-            console.log("Error al registrar Service Worker:", error);
-        });
+    try {
+        const configuracion = await obtenerJson("/configuracion-publica");
+
+        if (!configuracion.supabaseUrl || !configuracion.supabaseKey) {
+            console.log("Realtime no configurado");
+            return;
+        }
+
+        supabaseRealtime = window.supabase.createClient(
+            configuracion.supabaseUrl,
+            configuracion.supabaseKey
+        );
+
+        supabaseRealtime
+            .channel("agenda-tiempo-real")
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "eventos"
+                },
+                cargarEventos
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "fotos"
+                },
+                cargarFotos
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "notas"
+                },
+                cargarNotas
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "lugares"
+                },
+                cargarLugares
+            )
+            .subscribe(status => {
+                console.log("Realtime:", status);
+            });
+    } catch (error) {
+        console.log("Realtime no se pudo activar:", error.message);
+    }
 }
 
-function activarTiempoReal() {
-
-    supabaseRealtime
-        .channel("agenda-tiempo-real")
-
-        .on(
-            "postgres_changes",
-            {
-                event: "*",
-                schema: "public",
-                table: "eventos"
-            },
-            () => {
-                console.log("Evento actualizado");
-                cargarEventos();
-            }
-        )
-
-        .on(
-            "postgres_changes",
-            {
-                event: "*",
-                schema: "public",
-                table: "fotos"
-            },
-            () => {
-                console.log("Foto actualizada");
-                cargarFotos();
-            }
-        )
-
-        .on(
-            "postgres_changes",
-            {
-                event: "*",
-                schema: "public",
-                table: "notas"
-            },
-            () => {
-                console.log("Nota actualizada");
-                cargarNotas();
-            }
-        )
-
-        .on(
-            "postgres_changes",
-            {
-                event: "*",
-                schema: "public",
-                table: "lugares"
-            },
-            () => {
-                console.log("Lugar actualizado");
-                cargarLugares();
-            }
-        )
-
-        .subscribe((status) => {
-            console.log("Realtime:", status);
-        });
-
+function registrarServiceWorker() {
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js")
+            .then(() => {
+                console.log("Service Worker registrado");
+            })
+            .catch(error => {
+                console.log("Error al registrar Service Worker:", error);
+            });
+    }
 }
 
-activarTiempoReal();
+async function iniciarApp() {
+    try {
+        const logueado = await verificarLogin();
+        if (!logueado) return;
+
+        registrarEventosFormulario();
+        cargarPerfilPareja();
+
+        await Promise.all([
+            cargarEventos(),
+            cargarFotos(),
+            cargarNotas(),
+            cargarLugares()
+        ]);
+
+        await activarTiempoReal();
+        registrarServiceWorker();
+    } catch (error) {
+        console.error("No se pudo iniciar la app:", error);
+    }
+}
+
+iniciarApp();

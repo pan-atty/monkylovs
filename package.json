@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "backup": "node scripts/backup-local.js",
+    "import:supabase": "node scripts/import-supabase.js",
+    "test": "node --check server.js && node --check public/app.js && node --check public/login.js && node --check public/sw.js && node --check scripts/backup-local.js && node --check scripts/import-supabase.js"
   },
   "keywords": [],
   "author": "",
