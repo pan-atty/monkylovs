@@ -22,6 +22,8 @@ const SUPABASE_PUBLIC_KEY =
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     "";
 const SUPABASE_RETRY_MS = Number(process.env.SUPABASE_RETRY_MS || 60000);
+const MAINTENANCE_TOKEN = process.env.MAINTENANCE_TOKEN || "";
+const MAINTENANCE_TABLES = ["eventos", "fotos", "notas", "lugares"];
 
 const uploadsDir = path.join(__dirname, "uploads");
 const autoBackupDir = path.join(__dirname, "backups", "auto");
@@ -307,6 +309,36 @@ function responderError(res, operacion, mensaje, error) {
     });
 }
 
+function validarTokenMantenimiento(req, res) {
+    if (!MAINTENANCE_TOKEN) return true;
+
+    const token =
+        req.get("x-maintenance-token") ||
+        req.query.token ||
+        "";
+
+    if (token === MAINTENANCE_TOKEN) return true;
+
+    res.status(403).json({
+        ok: false,
+        mensaje: "Token de mantenimiento invalido"
+    });
+    return false;
+}
+
+async function contarRegistrosSupabase(tabla) {
+    const { count, error } = await supabase
+        .from(tabla)
+        .select("id", {
+            count: "exact",
+            head: true
+        });
+
+    if (error) throw error;
+
+    return count || 0;
+}
+
 function limpiarNombreArchivo(nombre) {
     return nombre
         .toLowerCase()
@@ -383,6 +415,39 @@ app.get("/health", (req, res) => {
         supabaseConfigurado: Boolean(supabase),
         supabaseEnPausaLocal: DATA_SOURCE === "auto" && Date.now() < supabaseDisabledUntil
     });
+});
+
+app.get("/mantenimiento/keepalive", async (req, res) => {
+    if (!validarTokenMantenimiento(req, res)) return;
+
+    if (!supabase) {
+        return res.status(500).json({
+            ok: false,
+            mensaje: "Supabase no esta configurado"
+        });
+    }
+
+    try {
+        const tablas = {};
+
+        for (const tabla of MAINTENANCE_TABLES) {
+            tablas[tabla] = await contarRegistrosSupabase(tabla);
+        }
+
+        res.json({
+            ok: true,
+            checkedAt: new Date().toISOString(),
+            dataSource: DATA_SOURCE,
+            tablas
+        });
+    } catch (error) {
+        responderError(
+            res,
+            "KEEPALIVE",
+            "Error al mantener Supabase activo",
+            error
+        );
+    }
 });
 
 app.get("/configuracion-publica", protegerRuta, (req, res) => {

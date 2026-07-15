@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "backup": "node scripts/backup-local.js",
+    "backup:supabase": "node scripts/backup-supabase.js",
     "import:supabase": "node scripts/import-supabase.js",
-    "test": "node --check server.js && node --check public/app.js && node --check public/login.js && node --check public/sw.js && node --check scripts/backup-local.js && node --check scripts/import-supabase.js"
+    "test": "node --check server.js && node --check public/app.js && node --check public/login.js && node --check public/sw.js && node --check scripts/backup-local.js && node --check scripts/backup-supabase.js && node --check scripts/import-supabase.js"
   },
   "keywords": [],
   "author": "",

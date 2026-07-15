@@ -1,0 +1,36 @@
+name: Backup Supabase
+
+on:
+  schedule:
+    - cron: "42 14 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create Supabase backup
+        run: npm run backup:supabase
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agenda-supabase-backup-${{ github.run_id }}
+          path: backups/supabase-*/
+          retention-days: 90
+          if-no-files-found: error
