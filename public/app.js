@@ -1,4 +1,6 @@
 let supabaseRealtime = null;
+const MAX_IMAGE_MB = 50;
+const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
 
 function escaparHtml(valor) {
     const mapa = {
@@ -14,12 +16,13 @@ function escaparHtml(valor) {
 
 async function obtenerJson(url, opciones = {}) {
     const respuesta = await fetch(url, opciones);
+    const texto = await respuesta.text();
     let resultado = {};
 
     try {
-        resultado = await respuesta.json();
+        resultado = texto ? JSON.parse(texto) : {};
     } catch (error) {
-        resultado = {};
+        resultado = texto ? { mensaje: texto.slice(0, 300) } : {};
     }
 
     if (respuesta.status === 401) {
@@ -221,17 +224,34 @@ async function subirFoto(evento) {
     evento.preventDefault();
 
     const archivo = document.getElementById("imagen").files[0];
+    const fecha = document.getElementById("fechaFoto").value;
+    const lugar = document.getElementById("lugarFoto").value.trim();
 
     if (!archivo) {
         alert("Selecciona una imagen");
         return;
     }
 
+    if (!archivo.type.startsWith("image/")) {
+        alert("El archivo debe ser una imagen");
+        return;
+    }
+
+    if (archivo.size > MAX_IMAGE_BYTES) {
+        alert(`La imagen pesa demasiado. Sube una imagen de máximo ${MAX_IMAGE_MB} MB.`);
+        return;
+    }
+
+    if (!fecha || !lugar) {
+        alert("Completa la fecha y el lugar de la foto");
+        return;
+    }
+
     const formData = new FormData();
 
     formData.append("imagen", archivo);
-    formData.append("fecha", document.getElementById("fechaFoto").value);
-    formData.append("lugar", document.getElementById("lugarFoto").value);
+    formData.append("fecha", fecha);
+    formData.append("lugar", lugar);
 
     try {
         const resultado = await obtenerJson("/subir-foto", {

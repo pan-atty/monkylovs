@@ -24,6 +24,8 @@ const SUPABASE_PUBLIC_KEY =
 const SUPABASE_RETRY_MS = Number(process.env.SUPABASE_RETRY_MS || 60000);
 const MAINTENANCE_TOKEN = process.env.MAINTENANCE_TOKEN || "";
 const MAINTENANCE_TABLES = ["eventos", "fotos", "notas", "lugares"];
+const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 50);
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
 const uploadsDir = path.join(__dirname, "uploads");
 const autoBackupDir = path.join(__dirname, "backups", "auto");
@@ -388,7 +390,7 @@ app.use(express.static(path.join(__dirname, "public")));
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 20 * 1024 * 1024
+        fileSize: MAX_UPLOAD_BYTES
     }
 });
 
@@ -910,6 +912,33 @@ app.delete("/lugar/:id", protegerRuta, async (req, res) => {
     } catch (error) {
         responderError(res, "ELIMINAR LUGAR", "Error al eliminar lugar", error);
     }
+});
+
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === "LIMIT_FILE_SIZE") {
+            return res.status(413).json({
+                mensaje: "La imagen pesa demasiado",
+                detalle: `Sube una imagen de máximo ${MAX_UPLOAD_MB} MB. En iPhone puedes enviarla como tamaño mediano o tomar captura de la foto.`
+            });
+        }
+
+        return res.status(400).json({
+            mensaje: "Error al procesar la imagen",
+            detalle: error.message
+        });
+    }
+
+    next(error);
+});
+
+app.use((error, req, res, next) => {
+    console.log("ERROR NO CONTROLADO:", describirError(error));
+
+    res.status(500).json({
+        mensaje: "Ocurrió un error en el servidor",
+        detalle: "Intenta de nuevo. Si sigue fallando, revisa los logs del servidor."
+    });
 });
 
 async function iniciarServidor() {
