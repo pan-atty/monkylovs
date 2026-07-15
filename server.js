@@ -204,17 +204,23 @@ function describirError(error) {
 
 function detalleAmigable(error) {
     const texto = describirError(error).toLowerCase();
+    const fallbackLocal = DATA_SOURCE !== "supabase" && Boolean(db);
+    const siguientePaso = fallbackLocal
+        ? " La app intentará usar la base local."
+        : " Despausa o restaura el proyecto en Supabase para que la app compartida vuelva a guardar datos.";
 
     if (texto.includes("paused") || texto.includes("suspended")) {
-        return "El proyecto de Supabase está pausado. La app intentará usar la base local.";
+        return `El proyecto de Supabase está pausado.${siguientePaso}`;
     }
 
     if (
         texto.includes("fetch failed") ||
         texto.includes("failed to fetch") ||
+        texto.includes("enotfound") ||
+        texto.includes("eai_again") ||
         texto.includes("network")
     ) {
-        return "No se pudo conectar con Supabase. La app intentará usar la base local.";
+        return `No se pudo conectar con Supabase.${siguientePaso}`;
     }
 
     return "Revisa la consola del servidor para ver el detalle técnico.";
