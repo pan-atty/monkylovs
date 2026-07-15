@@ -394,6 +394,49 @@ const upload = multer({
     }
 });
 
+function responderErrorUpload(res, error) {
+    console.log("ERROR UPLOAD FOTO:", describirError(error));
+
+    if (error instanceof multer.MulterError) {
+        if (error.code === "LIMIT_FILE_SIZE") {
+            return res.status(413).json({
+                mensaje: "La imagen pesa demasiado",
+                detalle: `Sube una imagen de máximo ${MAX_UPLOAD_MB} MB. En iPhone puedes enviarla como tamaño mediano o tomar captura de la foto.`
+            });
+        }
+
+        return res.status(400).json({
+            mensaje: "Error al procesar la imagen",
+            detalle: error.message
+        });
+    }
+
+    const texto = describirError(error).toLowerCase();
+
+    if (texto.includes("unexpected end of form") || texto.includes("aborted")) {
+        return res.status(400).json({
+            mensaje: "La subida se interrumpió",
+            detalle: "Intenta con una red estable o una imagen más ligera."
+        });
+    }
+
+    return res.status(500).json({
+        mensaje: "Error al subir imagen",
+        detalle: describirError(error)
+    });
+}
+
+function subirImagenMiddleware(req, res, next) {
+    upload.single("imagen")(req, res, error => {
+        if (error) {
+            responderErrorUpload(res, error);
+            return;
+        }
+
+        next();
+    });
+}
+
 const usuarios = [
     { usuario: "michel", password: "2006" },
     { usuario: "len", password: "9393" }
@@ -588,30 +631,30 @@ app.delete("/eliminar/:id", protegerRuta, async (req, res) => {
     }
 });
 
-app.post("/subir-foto", protegerRuta, upload.single("imagen"), async (req, res) => {
-    const fecha = limpiarTexto(req.body.fecha);
-    const lugar = limpiarTexto(req.body.lugar);
-
-    if (!req.file) {
-        return res.status(400).json({
-            mensaje: "No se seleccionó ninguna imagen"
-        });
-    }
-
-    if (!req.file.mimetype.startsWith("image/")) {
-        return res.status(400).json({
-            mensaje: "El archivo debe ser una imagen"
-        });
-    }
-
-    if (!validarCampos(res, { fecha, lugar })) return;
-
-    const nombreOriginal = limpiarNombreArchivo(req.file.originalname);
-    const extension = nombreOriginal.split(".").pop() || "png";
-    const nombreArchivo =
-        `foto-${Date.now()}-${Math.floor(Math.random() * 999999)}.${extension}`;
-
+app.post("/subir-foto", protegerRuta, subirImagenMiddleware, async (req, res) => {
     try {
+        const fecha = limpiarTexto(req.body.fecha);
+        const lugar = limpiarTexto(req.body.lugar);
+
+        if (!req.file) {
+            return res.status(400).json({
+                mensaje: "No se seleccionó ninguna imagen"
+            });
+        }
+
+        if (!String(req.file.mimetype || "").startsWith("image/")) {
+            return res.status(400).json({
+                mensaje: "El archivo debe ser una imagen"
+            });
+        }
+
+        if (!validarCampos(res, { fecha, lugar })) return;
+
+        const nombreOriginal = limpiarNombreArchivo(req.file.originalname || "");
+        const extension = nombreOriginal.split(".").pop() || "jpg";
+        const nombreArchivo =
+            `foto-${Date.now()}-${Math.floor(Math.random() * 999999)}.${extension}`;
+
         await ejecutarConFallback(
             "subir foto",
             async () => {
@@ -659,7 +702,7 @@ app.post("/subir-foto", protegerRuta, upload.single("imagen"), async (req, res) 
             mensaje: "Foto subida correctamente"
         });
     } catch (error) {
-        responderError(res, "SUBIR FOTO", "Error al subir imagen", error);
+        responderErrorUpload(res, error);
     }
 });
 
@@ -912,24 +955,6 @@ app.delete("/lugar/:id", protegerRuta, async (req, res) => {
     } catch (error) {
         responderError(res, "ELIMINAR LUGAR", "Error al eliminar lugar", error);
     }
-});
-
-app.use((error, req, res, next) => {
-    if (error instanceof multer.MulterError) {
-        if (error.code === "LIMIT_FILE_SIZE") {
-            return res.status(413).json({
-                mensaje: "La imagen pesa demasiado",
-                detalle: `Sube una imagen de máximo ${MAX_UPLOAD_MB} MB. En iPhone puedes enviarla como tamaño mediano o tomar captura de la foto.`
-            });
-        }
-
-        return res.status(400).json({
-            mensaje: "Error al procesar la imagen",
-            detalle: error.message
-        });
-    }
-
-    next(error);
 });
 
 app.use((error, req, res, next) => {

@@ -1,6 +1,9 @@
 let supabaseRealtime = null;
 const MAX_IMAGE_MB = 50;
 const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
+const COMPRESS_IMAGE_BYTES = 4 * 1024 * 1024;
+const COMPRESS_MAX_SIDE = 1800;
+const COMPRESS_QUALITY = 0.82;
 
 function escaparHtml(valor) {
     const mapa = {
@@ -45,6 +48,67 @@ function mostrarError(error) {
 
 function listaSegura(datos) {
     return Array.isArray(datos) ? datos : [];
+}
+
+function cargarImagenDesdeArchivo(archivo) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(archivo);
+        const imagen = new Image();
+
+        imagen.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(imagen);
+        };
+
+        imagen.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("No se pudo leer la imagen seleccionada"));
+        };
+
+        imagen.src = url;
+    });
+}
+
+function canvasABlob(canvas) {
+    return new Promise(resolve => {
+        canvas.toBlob(resolve, "image/jpeg", COMPRESS_QUALITY);
+    });
+}
+
+function nombreJpg(nombre) {
+    const base = String(nombre || "foto")
+        .replace(/\.[^.]+$/, "")
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .slice(0, 80) || "foto";
+
+    return `${base}.jpg`;
+}
+
+async function comprimirImagenSiConviene(archivo) {
+    if (archivo.size <= COMPRESS_IMAGE_BYTES) return archivo;
+
+    const imagen = await cargarImagenDesdeArchivo(archivo);
+    const escala = Math.min(
+        1,
+        COMPRESS_MAX_SIDE / Math.max(imagen.naturalWidth, imagen.naturalHeight)
+    );
+    const ancho = Math.max(1, Math.round(imagen.naturalWidth * escala));
+    const alto = Math.max(1, Math.round(imagen.naturalHeight * escala));
+    const canvas = document.createElement("canvas");
+    const contexto = canvas.getContext("2d");
+
+    canvas.width = ancho;
+    canvas.height = alto;
+    contexto.drawImage(imagen, 0, 0, ancho, alto);
+
+    const blob = await canvasABlob(canvas);
+
+    if (!blob || blob.size >= archivo.size) return archivo;
+
+    return new File([blob], nombreJpg(archivo.name), {
+        type: "image/jpeg",
+        lastModified: Date.now()
+    });
 }
 
 async function verificarLogin() {
@@ -223,22 +287,20 @@ function crearCalendario(eventos) {
 async function subirFoto(evento) {
     evento.preventDefault();
 
-    const archivo = document.getElementById("imagen").files[0];
+    const inputImagen = document.getElementById("imagen");
+    const boton = document.querySelector("#formFoto button[type='submit']");
+    const textoBoton = boton ? boton.textContent : "";
+    const archivoSeleccionado = inputImagen.files[0];
     const fecha = document.getElementById("fechaFoto").value;
     const lugar = document.getElementById("lugarFoto").value.trim();
 
-    if (!archivo) {
+    if (!archivoSeleccionado) {
         alert("Selecciona una imagen");
         return;
     }
 
-    if (!archivo.type.startsWith("image/")) {
+    if (!archivoSeleccionado.type.startsWith("image/")) {
         alert("El archivo debe ser una imagen");
-        return;
-    }
-
-    if (archivo.size > MAX_IMAGE_BYTES) {
-        alert(`La imagen pesa demasiado. Sube una imagen de máximo ${MAX_IMAGE_MB} MB.`);
         return;
     }
 
@@ -247,13 +309,31 @@ async function subirFoto(evento) {
         return;
     }
 
-    const formData = new FormData();
-
-    formData.append("imagen", archivo);
-    formData.append("fecha", fecha);
-    formData.append("lugar", lugar);
-
     try {
+        if (boton) {
+            boton.disabled = true;
+            boton.textContent = "Subiendo imagen...";
+        }
+
+        let archivo = archivoSeleccionado;
+
+        try {
+            archivo = await comprimirImagenSiConviene(archivoSeleccionado);
+        } catch (error) {
+            console.log("No se pudo comprimir la imagen:", error.message);
+        }
+
+        if (archivo.size > MAX_IMAGE_BYTES) {
+            alert(`La imagen pesa demasiado. Sube una imagen de máximo ${MAX_IMAGE_MB} MB.`);
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("imagen", archivo, archivo.name);
+        formData.append("fecha", fecha);
+        formData.append("lugar", lugar);
+
         const resultado = await obtenerJson("/subir-foto", {
             method: "POST",
             body: formData
@@ -264,6 +344,11 @@ async function subirFoto(evento) {
         await cargarFotos();
     } catch (error) {
         mostrarError(error);
+    } finally {
+        if (boton) {
+            boton.disabled = false;
+            boton.textContent = textoBoton;
+        }
     }
 }
 
