@@ -6,13 +6,13 @@ const fsp = require("fs/promises");
 const express = require("express");
 const multer = require("multer");
 const session = require("express-session");
-const sqlite3 = require("sqlite3").verbose();
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const DATA_SOURCE = (process.env.DATA_SOURCE || "auto").toLowerCase();
+const IS_RENDER = Boolean(process.env.RENDER || process.env.RENDER_SERVICE_ID);
+const DATA_SOURCE = (process.env.DATA_SOURCE || (IS_RENDER ? "supabase" : "auto")).toLowerCase();
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_KEY || "";
 const SUPABASE_PUBLIC_KEY =
@@ -26,6 +26,7 @@ const uploadsDir = path.join(__dirname, "uploads");
 const autoBackupDir = path.join(__dirname, "backups", "auto");
 fs.mkdirSync(uploadsDir, { recursive: true });
 
+let db = null;
 let supabase = null;
 let supabaseDisabledUntil = 0;
 
@@ -41,10 +42,29 @@ if (SUPABASE_URL && SUPABASE_KEY && DATA_SOURCE !== "sqlite") {
     process.exit(1);
 }
 
-const db = new sqlite3.Database(path.join(__dirname, "agenda.db"));
+function debeUsarBaseLocal() {
+    return DATA_SOURCE !== "supabase";
+}
+
+function abrirBaseLocal() {
+    if (!debeUsarBaseLocal()) return;
+
+    try {
+        const sqlite3 = require("sqlite3").verbose();
+        db = new sqlite3.Database(path.join(__dirname, "agenda.db"));
+    } catch (error) {
+        console.log("SQLite no disponible en este entorno:", error.message);
+        db = null;
+    }
+}
 
 function dbRun(sql, params = []) {
     return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error("SQLite local no esta disponible"));
+            return;
+        }
+
         db.run(sql, params, function(error) {
             if (error) {
                 reject(error);
@@ -60,6 +80,11 @@ function dbRun(sql, params = []) {
 
 function dbAll(sql, params = []) {
     return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error("SQLite local no esta disponible"));
+            return;
+        }
+
         db.all(sql, params, (error, rows) => {
             if (error) {
                 reject(error);
@@ -72,6 +97,11 @@ function dbAll(sql, params = []) {
 
 function dbGet(sql, params = []) {
     return new Promise((resolve, reject) => {
+        if (!db) {
+            reject(new Error("SQLite local no esta disponible"));
+            return;
+        }
+
         db.get(sql, params, (error, row) => {
             if (error) {
                 reject(error);
@@ -85,6 +115,8 @@ function dbGet(sql, params = []) {
 let backupTimer = null;
 
 function programarRespaldoAutomatico() {
+    if (!db) return;
+
     clearTimeout(backupTimer);
 
     backupTimer = setTimeout(async () => {
@@ -114,6 +146,8 @@ function programarRespaldoAutomatico() {
 }
 
 async function inicializarBaseLocal() {
+    if (!db) return;
+
     await dbRun(`
         CREATE TABLE IF NOT EXISTS eventos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -807,13 +841,14 @@ app.delete("/lugar/:id", protegerRuta, async (req, res) => {
 });
 
 async function iniciarServidor() {
+    abrirBaseLocal();
     await inicializarBaseLocal();
 
     app.listen(PORT, () => {
         console.log(`Servidor iniciado en puerto ${PORT}`);
         console.log("Modo de datos:", DATA_SOURCE);
         console.log("Supabase configurado:", Boolean(supabase));
-        console.log("SQLite local listo:", path.join(__dirname, "agenda.db"));
+        console.log("SQLite local listo:", Boolean(db));
     });
 }
 
@@ -823,5 +858,9 @@ iniciarServidor().catch(error => {
 });
 
 process.on("SIGINT", () => {
-    db.close(() => process.exit(0));
+    if (db) {
+        db.close(() => process.exit(0));
+    } else {
+        process.exit(0);
+    }
 });
