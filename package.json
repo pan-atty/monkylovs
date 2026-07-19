@@ -1,7 +1,7 @@
 {
   "name": "agenda",
   "version": "1.0.0",
-  "description": "",
+  "description": "Agenda web full stack con Express, Supabase, Render y backups automatizados.",
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
