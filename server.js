@@ -360,7 +360,7 @@ async function eliminarArchivoLocal(url) {
 app.use(express.json());
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || "agenda_secreta_michel",
+    secret: process.env.SESSION_SECRET || "agenda_dev_session_secret",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -437,10 +437,34 @@ function subirImagenMiddleware(req, res, next) {
     });
 }
 
-const usuarios = [
-    { usuario: "michel", password: "2006" },
-    { usuario: "len", password: "9393" }
-];
+function cargarUsuarios() {
+    const usuariosJson = process.env.APP_USERS || "";
+
+    if (!usuariosJson) {
+        console.warn("APP_USERS no esta configurado. El login queda desactivado.");
+        return [];
+    }
+
+    try {
+        const usuariosParseados = JSON.parse(usuariosJson);
+
+        if (!Array.isArray(usuariosParseados)) {
+            throw new Error("APP_USERS debe ser un arreglo JSON");
+        }
+
+        return usuariosParseados
+            .map(usuario => ({
+                usuario: limpiarTexto(usuario.usuario).toLowerCase(),
+                password: limpiarTexto(usuario.password)
+            }))
+            .filter(usuario => usuario.usuario && usuario.password);
+    } catch (error) {
+        console.error("APP_USERS invalido:", error.message);
+        return [];
+    }
+}
+
+const usuarios = cargarUsuarios();
 
 function protegerRuta(req, res, next) {
     if (req.session.usuario) {
@@ -505,6 +529,13 @@ app.get("/configuracion-publica", protegerRuta, (req, res) => {
 app.post("/login", (req, res) => {
     const { usuario, password } = req.body;
     const usuarioLimpio = limpiarTexto(usuario).toLowerCase();
+
+    if (usuarios.length === 0) {
+        return res.status(503).json({
+            acceso: false,
+            mensaje: "Login no configurado"
+        });
+    }
 
     const encontrado = usuarios.find(
         user => user.usuario === usuarioLimpio && user.password === password

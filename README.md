@@ -6,6 +6,17 @@ App personal de agenda conectada a Supabase y publicada en Render:
 https://monkylovs.onrender.com/index.html
 ```
 
+## Portafolio y privacidad
+
+Este repo puede mostrarse como proyecto de portafolio porque el codigo no debe contener:
+
+- llaves de Supabase
+- contrasenas de usuarios
+- base de datos local
+- fotos o respaldos privados
+
+Los valores reales viven en variables de entorno de Render o en GitHub Secrets.
+
 ## Iniciar local
 
 ```bash
@@ -93,3 +104,14 @@ npm run import:supabase
 ## Configuracion
 
 Usa `.env.example` como referencia. El archivo `.env` real no debe subirse a GitHub porque contiene llaves privadas.
+
+Variables importantes:
+
+```text
+SESSION_SECRET
+APP_USERS
+SUPABASE_URL
+SUPABASE_KEY
+SUPABASE_PUBLIC_KEY
+MAINTENANCE_TOKEN
+```
