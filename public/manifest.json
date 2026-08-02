@@ -1,6 +1,6 @@
 {
-    "name": "Monky Agenda ❤️",
-    "short_name": "Monky ❤️",
+    "name": "Agenda Familiar",
+    "short_name": "Agenda Familiar",
     "description": "Agenda privada de Michel y Len",
     "start_url": "/login.html",
     "display": "standalone",
