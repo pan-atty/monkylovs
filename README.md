@@ -6,6 +6,13 @@ App personal de agenda conectada a Supabase y publicada en Render:
 https://monkylovs.onrender.com/index.html
 ```
 
+## Funciones
+
+- Calendario de eventos compartido.
+- Album de fotos con imagenes guardadas en Supabase Storage.
+- Notitas de amor y lugares por visitar.
+- Retos de Amor: Michel crea retos con objetivos y Len los completa para reclamar recompensas.
+
 ## Portafolio y privacidad
 
 Este repo puede mostrarse como proyecto de portafolio porque el codigo no debe contener:
@@ -35,7 +42,7 @@ En Render la app usa Supabase como base compartida, para que funcione desde ciud
 
 En local puede usar SQLite como respaldo si `DATA_SOURCE=auto` y Supabase falla:
 
-- `agenda.db` para eventos, notas y lugares locales.
+- `agenda.db` para eventos, notas, lugares y retos locales.
 - `uploads/` para fotos locales.
 - `backups/auto/` como respaldo local reciente.
 
@@ -63,7 +70,7 @@ GitHub Actions ejecuta `.github/workflows/backup-supabase.yml` todos los dias.
 El backup crea un artifact descargable por 90 dias con:
 
 - `agenda-supabase.json`, todo en un solo archivo.
-- `eventos.json`, `fotos.json`, `notas.json`, `lugares.json`.
+- `eventos.json`, `fotos.json`, `notas.json`, `lugares.json`, `retos.json` y `reto_objetivos.json`.
 - carpeta `fotos/` con las imagenes que se pudieron descargar.
 - `schema.sql` para reconstruir tablas basicas.
 - `manifest.json` con conteos y fecha.

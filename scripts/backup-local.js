@@ -64,7 +64,9 @@ async function main() {
             eventos: await dbAll(db, "SELECT * FROM eventos ORDER BY fecha ASC, hora ASC, id ASC"),
             fotos: await dbAll(db, "SELECT * FROM fotos ORDER BY id ASC"),
             notas: await dbAll(db, "SELECT * FROM notas ORDER BY creado_en ASC, id ASC"),
-            lugares: await dbAll(db, "SELECT * FROM lugares ORDER BY id ASC")
+            lugares: await dbAll(db, "SELECT * FROM lugares ORDER BY id ASC"),
+            retos: await dbAll(db, "SELECT * FROM retos ORDER BY creado_en ASC, id ASC"),
+            reto_objetivos: await dbAll(db, "SELECT * FROM reto_objetivos ORDER BY reto_id ASC, id ASC")
         };
 
         await fs.copyFile(dbPath, path.join(destino, "agenda.db"));

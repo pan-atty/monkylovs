@@ -120,6 +120,40 @@
     <div id="listaNotas"></div>
 </section>
 
+<section class="retos">
+    <h2>🎁 Retos de Amor</h2>
+
+    <form id="formReto" class="oculto">
+        <label>Reto:</label>
+        <input
+            type="text"
+            id="tituloReto"
+            placeholder="Ejemplo: Misión de sonrisas"
+            required
+        >
+
+        <label>Objetivos:</label>
+        <textarea
+            id="objetivosReto"
+            rows="5"
+            placeholder="Un objetivo por línea"
+            required
+        ></textarea>
+
+        <label>Recompensa:</label>
+        <input
+            type="text"
+            id="recompensaReto"
+            placeholder="Ejemplo: 1 abrazo gigante"
+            required
+        >
+
+        <button type="submit">Crear reto 🎁</button>
+    </form>
+
+    <div id="listaRetos"></div>
+</section>
+
 <section class="lugares">
     <h2>🍔 Lugares por visitar</h2>
 
@@ -140,8 +174,17 @@
 <section class="notificaciones">
     <h2>🔔 Notificaciones</h2>
     <button id="btnNotificaciones">Activar notificaciones</button>
-    <div id="avisosEventos"></div>
+<div id="avisosEventos"></div>
 </section>
+
+<div id="modalRecompensa" class="modal-recompensa oculto">
+    <div class="recompensa-contenido">
+        <button id="cerrarRecompensa" type="button" class="cerrar-recompensa">✖</button>
+        <div class="recompensa-animacion">💗✨🎁✨💗</div>
+        <h2>Recompensa desbloqueada</h2>
+        <p id="textoRecompensa"></p>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 

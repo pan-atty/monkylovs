@@ -81,6 +81,30 @@ async function inicializarBaseLocal() {
             visitado INTEGER DEFAULT 0
         )
     `);
+
+    await dbRun(`
+        CREATE TABLE IF NOT EXISTS retos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT,
+            recompensa TEXT,
+            creado_por TEXT,
+            reclamado INTEGER DEFAULT 0,
+            reclamado_por TEXT,
+            reclamado_en TIMESTAMP,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    await dbRun(`
+        CREATE TABLE IF NOT EXISTS reto_objetivos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reto_id INTEGER,
+            descripcion TEXT,
+            completado INTEGER DEFAULT 0,
+            completado_en TIMESTAMP,
+            FOREIGN KEY (reto_id) REFERENCES retos(id) ON DELETE CASCADE
+        )
+    `);
 }
 
 async function consultarTabla(tabla) {
@@ -207,12 +231,59 @@ async function importarFotos() {
     console.log(`Fotos importadas: ${fotos.length}`);
 }
 
+async function importarRetos() {
+    const retos = await consultarTabla("retos");
+
+    for (const reto of retos) {
+        await dbRun(
+            `INSERT OR REPLACE INTO retos
+             (id, titulo, recompensa, creado_por, reclamado, reclamado_por, reclamado_en, creado_en)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                reto.id,
+                reto.titulo || "",
+                reto.recompensa || "",
+                reto.creado_por || "",
+                reto.reclamado === true || reto.reclamado === 1 ? 1 : 0,
+                reto.reclamado_por || "",
+                reto.reclamado_en || null,
+                reto.creado_en || new Date().toISOString()
+            ]
+        );
+    }
+
+    console.log(`Retos importados: ${retos.length}`);
+}
+
+async function importarObjetivosRetos() {
+    const objetivos = await consultarTabla("reto_objetivos");
+
+    for (const objetivo of objetivos) {
+        await dbRun(
+            `INSERT OR REPLACE INTO reto_objetivos
+             (id, reto_id, descripcion, completado, completado_en)
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+                objetivo.id,
+                objetivo.reto_id,
+                objetivo.descripcion || "",
+                objetivo.completado === true || objetivo.completado === 1 ? 1 : 0,
+                objetivo.completado_en || null
+            ]
+        );
+    }
+
+    console.log(`Objetivos de retos importados: ${objetivos.length}`);
+}
+
 async function main() {
     await inicializarBaseLocal();
     await importarEventos();
     await importarNotas();
     await importarLugares();
     await importarFotos();
+    await importarRetos();
+    await importarObjetivosRetos();
     console.log("Importacion desde Supabase terminada.");
 }
 

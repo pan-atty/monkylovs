@@ -1,4 +1,5 @@
 let supabaseRealtime = null;
+let usuarioActual = "";
 const MAX_IMAGE_MB = 50;
 const MAX_IMAGE_BYTES = MAX_IMAGE_MB * 1024 * 1024;
 const COMPRESS_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -119,6 +120,9 @@ async function verificarLogin() {
         return false;
     }
 
+    usuarioActual = resultado.usuario;
+    document.body.dataset.usuario = usuarioActual;
+
     document.getElementById("usuarioConectado").textContent =
         `Conectado como: ${resultado.usuario} ❤️`;
 
@@ -130,9 +134,15 @@ function registrarEventosFormulario() {
     document.getElementById("formFoto").addEventListener("submit", subirFoto);
     document.getElementById("formNota").addEventListener("submit", guardarNota);
     document.getElementById("formLugar").addEventListener("submit", guardarLugar);
+    document.getElementById("formReto").addEventListener("submit", guardarReto);
     document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
     document.getElementById("btnNotificaciones").addEventListener("click", activarNotificaciones);
     document.getElementById("cerrar").addEventListener("click", cerrarVisor);
+    document.getElementById("cerrarRecompensa").addEventListener("click", cerrarRecompensa);
+
+    if (usuarioActual === "michel") {
+        document.getElementById("formReto").classList.remove("oculto");
+    }
 
     document.addEventListener("click", function(evento) {
         if (evento.target.matches(".foto-card img")) {
@@ -576,6 +586,235 @@ async function eliminarLugar(id) {
     }
 }
 
+function objetivosDesdeFormulario() {
+    return document.getElementById("objetivosReto").value
+        .split(/\r?\n/)
+        .map(texto => texto.trim())
+        .filter(Boolean);
+}
+
+async function guardarReto(evento) {
+    evento.preventDefault();
+
+    if (usuarioActual !== "michel") {
+        alert("Solo Michel puede crear retos");
+        return;
+    }
+
+    const datos = {
+        titulo: document.getElementById("tituloReto").value,
+        recompensa: document.getElementById("recompensaReto").value,
+        objetivos: objetivosDesdeFormulario()
+    };
+
+    if (datos.objetivos.length === 0) {
+        alert("Agrega al menos un objetivo");
+        return;
+    }
+
+    try {
+        const resultado = await obtenerJson("/retos", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datos)
+        });
+
+        alert(resultado.mensaje);
+        document.getElementById("formReto").reset();
+        await cargarRetos();
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+function retoEstaCompleto(reto) {
+    return Number(reto.total_objetivos) > 0 &&
+        Number(reto.completados) >= Number(reto.total_objetivos);
+}
+
+function renderizarObjetivo(objetivo, reto) {
+    const puedeCompletar = usuarioActual === "len" && !reto.reclamado;
+
+    return `
+        <label class="reto-objetivo ${objetivo.completado ? "completado" : ""}">
+            <input
+                type="checkbox"
+                ${objetivo.completado ? "checked" : ""}
+                ${puedeCompletar ? "" : "disabled"}
+                onchange="cambiarObjetivoReto(${Number(objetivo.id)}, this.checked)"
+            >
+            <span>${escaparHtml(objetivo.descripcion)}</span>
+        </label>
+    `;
+}
+
+function renderizarAccionesReto(reto) {
+    const completo = retoEstaCompleto(reto);
+    const reclamar = usuarioActual === "len" && completo && !reto.reclamado;
+    const eliminar = usuarioActual === "michel";
+
+    return `
+        <div class="reto-acciones">
+            ${reclamar ? `
+                <button type="button" onclick="reclamarRecompensa(${Number(reto.id)})">
+                    Reclamar recompensa 🎁
+                </button>
+            ` : ""}
+
+            ${reto.reclamado ? `
+                <p class="reto-reclamado">
+                    Recompensa reclamada por ${escaparHtml(reto.reclamado_por || "Len")} 💗
+                </p>
+            ` : ""}
+
+            ${eliminar ? `
+                <button
+                    type="button"
+                    class="btn-eliminar-reto"
+                    onclick="eliminarReto(${Number(reto.id)})"
+                >
+                    🗑️ Eliminar reto
+                </button>
+            ` : ""}
+        </div>
+    `;
+}
+
+async function cargarRetos() {
+    const lista = document.getElementById("listaRetos");
+
+    try {
+        const retos = listaSegura(await obtenerJson("/retos"));
+        lista.innerHTML = "";
+
+        if (retos.length === 0) {
+            lista.innerHTML = `
+                <p class="estado-vacio">
+                    Todavía no hay retos activos.
+                </p>
+            `;
+            return;
+        }
+
+        retos.forEach(reto => {
+            const total = Number(reto.total_objetivos) || 0;
+            const completados = Number(reto.completados) || 0;
+            const porcentaje = total > 0 ? Math.round((completados / total) * 100) : 0;
+            const div = document.createElement("div");
+
+            div.classList.add("reto-card");
+
+            if (reto.reclamado) {
+                div.classList.add("reto-card-reclamado");
+            } else if (retoEstaCompleto(reto)) {
+                div.classList.add("reto-card-completo");
+            }
+
+            div.innerHTML = `
+                <div class="reto-encabezado">
+                    <div>
+                        <h3>${escaparHtml(reto.titulo)}</h3>
+                        <p>Recompensa: <b>${escaparHtml(reto.recompensa)}</b></p>
+                    </div>
+                    <span>${completados}/${total}</span>
+                </div>
+
+                <div class="reto-barra">
+                    <span style="width: ${porcentaje}%"></span>
+                </div>
+
+                <div class="reto-objetivos">
+                    ${(reto.objetivos || []).map(objetivo => renderizarObjetivo(objetivo, reto)).join("")}
+                </div>
+
+                ${renderizarAccionesReto(reto)}
+            `;
+
+            lista.appendChild(div);
+        });
+    } catch (error) {
+        lista.innerHTML = `<p class="estado-error">${escaparHtml(error.message)}</p>`;
+        console.error(error);
+    }
+}
+
+async function cambiarObjetivoReto(id, completado) {
+    if (usuarioActual !== "len") {
+        alert("Solo Len puede completar retos");
+        await cargarRetos();
+        return;
+    }
+
+    try {
+        await obtenerJson(`/retos/objetivos/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ completado })
+        });
+
+        await cargarRetos();
+    } catch (error) {
+        mostrarError(error);
+        await cargarRetos();
+    }
+}
+
+async function reclamarRecompensa(id) {
+    if (usuarioActual !== "len") {
+        alert("Solo Len puede reclamar la recompensa");
+        return;
+    }
+
+    try {
+        const resultado = await obtenerJson(`/retos/${id}/reclamar`, {
+            method: "POST"
+        });
+
+        mostrarRecompensa(resultado.titulo, resultado.recompensa);
+        await cargarRetos();
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+async function eliminarReto(id) {
+    if (usuarioActual !== "michel") {
+        alert("Solo Michel puede eliminar retos");
+        return;
+    }
+
+    const confirmar = confirm("¿Eliminar este reto?");
+
+    if (!confirmar) return;
+
+    try {
+        const resultado = await obtenerJson(`/retos/${id}`, {
+            method: "DELETE"
+        });
+
+        alert(resultado.mensaje);
+        await cargarRetos();
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+function mostrarRecompensa(titulo, recompensa) {
+    const modal = document.getElementById("modalRecompensa");
+    const texto = document.getElementById("textoRecompensa");
+
+    texto.textContent = `${titulo}: ${recompensa}`;
+    modal.classList.remove("oculto");
+}
+
+function cerrarRecompensa() {
+    document.getElementById("modalRecompensa").classList.add("oculto");
+}
+
 async function activarNotificaciones() {
     if (!("Notification" in window)) {
         alert("Tu navegador no soporta notificaciones");
@@ -692,6 +931,24 @@ async function activarTiempoReal() {
                 },
                 cargarLugares
             )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "retos"
+                },
+                cargarRetos
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
+                    table: "reto_objetivos"
+                },
+                cargarRetos
+            )
             .subscribe(status => {
                 console.log("Realtime:", status);
             });
@@ -724,7 +981,8 @@ async function iniciarApp() {
             cargarEventos(),
             cargarFotos(),
             cargarNotas(),
-            cargarLugares()
+            cargarLugares(),
+            cargarRetos()
         ]);
 
         await activarTiempoReal();

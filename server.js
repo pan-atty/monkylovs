@@ -23,7 +23,14 @@ const SUPABASE_PUBLIC_KEY =
     "";
 const SUPABASE_RETRY_MS = Number(process.env.SUPABASE_RETRY_MS || 60000);
 const MAINTENANCE_TOKEN = process.env.MAINTENANCE_TOKEN || "";
-const MAINTENANCE_TABLES = ["eventos", "fotos", "notas", "lugares"];
+const MAINTENANCE_TABLES = [
+    "eventos",
+    "fotos",
+    "notas",
+    "lugares",
+    "retos",
+    "reto_objetivos"
+];
 const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 50);
 const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 
@@ -189,6 +196,30 @@ async function inicializarBaseLocal() {
             visitado INTEGER DEFAULT 0
         )
     `);
+
+    await dbRun(`
+        CREATE TABLE IF NOT EXISTS retos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT,
+            recompensa TEXT,
+            creado_por TEXT,
+            reclamado INTEGER DEFAULT 0,
+            reclamado_por TEXT,
+            reclamado_en TIMESTAMP,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    await dbRun(`
+        CREATE TABLE IF NOT EXISTS reto_objetivos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reto_id INTEGER,
+            descripcion TEXT,
+            completado INTEGER DEFAULT 0,
+            completado_en TIMESTAMP,
+            FOREIGN KEY (reto_id) REFERENCES retos(id) ON DELETE CASCADE
+        )
+    `);
 }
 
 function describirError(error) {
@@ -300,6 +331,92 @@ function validarCampos(res, campos) {
     }
 
     return true;
+}
+
+function esMichel(req) {
+    return req.session.usuario === "michel";
+}
+
+function esLen(req) {
+    return req.session.usuario === "len";
+}
+
+function protegerMichel(req, res, next) {
+    if (esMichel(req)) {
+        next();
+        return;
+    }
+
+    res.status(403).json({
+        mensaje: "Solo Michel puede hacer esto"
+    });
+}
+
+function protegerLen(req, res, next) {
+    if (esLen(req)) {
+        next();
+        return;
+    }
+
+    res.status(403).json({
+        mensaje: "Solo Len puede completar retos"
+    });
+}
+
+function booleanoDb(valor) {
+    return valor === true || valor === 1;
+}
+
+function formatearRetos(retos = [], objetivos = []) {
+    const objetivosPorReto = new Map();
+
+    objetivos.forEach(objetivo => {
+        const retoId = Number(objetivo.reto_id);
+        const lista = objetivosPorReto.get(retoId) || [];
+
+        lista.push({
+            id: objetivo.id,
+            reto_id: objetivo.reto_id,
+            descripcion: objetivo.descripcion,
+            completado: booleanoDb(objetivo.completado),
+            completado_en: objetivo.completado_en || null
+        });
+
+        objetivosPorReto.set(retoId, lista);
+    });
+
+    return retos.map(reto => {
+        const listaObjetivos = objetivosPorReto.get(Number(reto.id)) || [];
+
+        return {
+            id: reto.id,
+            titulo: reto.titulo,
+            recompensa: reto.recompensa,
+            creado_por: reto.creado_por,
+            reclamado: booleanoDb(reto.reclamado),
+            reclamado_por: reto.reclamado_por || null,
+            reclamado_en: reto.reclamado_en || null,
+            creado_en: reto.creado_en || null,
+            objetivos: listaObjetivos,
+            completados: listaObjetivos.filter(objetivo => objetivo.completado).length,
+            total_objetivos: listaObjetivos.length
+        };
+    });
+}
+
+function limpiarObjetivos(objetivos) {
+    if (Array.isArray(objetivos)) {
+        return objetivos
+            .map(limpiarTexto)
+            .filter(Boolean)
+            .slice(0, 12);
+    }
+
+    return limpiarTexto(objetivos)
+        .split(/\r?\n/)
+        .map(limpiarTexto)
+        .filter(Boolean)
+        .slice(0, 12);
 }
 
 function responderError(res, operacion, mensaje, error) {
@@ -985,6 +1102,351 @@ app.delete("/lugar/:id", protegerRuta, async (req, res) => {
         });
     } catch (error) {
         responderError(res, "ELIMINAR LUGAR", "Error al eliminar lugar", error);
+    }
+});
+
+app.get("/retos", protegerRuta, async (req, res) => {
+    try {
+        const retos = await datosConFallback(
+            "cargar retos",
+            async () => {
+                const { data: retosData, error: errorRetos } = await supabase
+                    .from("retos")
+                    .select("*")
+                    .order("creado_en", { ascending: false })
+                    .order("id", { ascending: false });
+
+                if (errorRetos) throw errorRetos;
+
+                const ids = (retosData || []).map(reto => reto.id);
+
+                if (ids.length === 0) {
+                    return [];
+                }
+
+                const { data: objetivosData, error: errorObjetivos } = await supabase
+                    .from("reto_objetivos")
+                    .select("*")
+                    .in("reto_id", ids)
+                    .order("id", { ascending: true });
+
+                if (errorObjetivos) throw errorObjetivos;
+
+                return formatearRetos(retosData, objetivosData);
+            },
+            async () => {
+                const retosData = await dbAll(
+                    `SELECT id, titulo, recompensa, creado_por, reclamado,
+                            reclamado_por, reclamado_en, creado_en
+                     FROM retos
+                     ORDER BY creado_en DESC, id DESC`
+                );
+                const objetivosData = await dbAll(
+                    `SELECT id, reto_id, descripcion, completado, completado_en
+                     FROM reto_objetivos
+                     ORDER BY id ASC`
+                );
+
+                return formatearRetos(retosData, objetivosData);
+            }
+        );
+
+        res.json(retos || []);
+    } catch (error) {
+        responderError(res, "CARGAR RETOS", "Error al cargar retos", error);
+    }
+});
+
+app.post("/retos", protegerRuta, protegerMichel, async (req, res) => {
+    const titulo = limpiarTexto(req.body.titulo);
+    const recompensa = limpiarTexto(req.body.recompensa);
+    const objetivos = limpiarObjetivos(req.body.objetivos);
+    const creadoPor = req.session.usuario;
+
+    if (!validarCampos(res, { titulo, recompensa })) return;
+
+    if (objetivos.length === 0) {
+        return res.status(400).json({
+            mensaje: "Agrega al menos un objetivo"
+        });
+    }
+
+    try {
+        await ejecutarConFallback(
+            "crear reto",
+            async () => {
+                const { data: reto, error: errorReto } = await supabase
+                    .from("retos")
+                    .insert([{
+                        titulo,
+                        recompensa,
+                        creado_por: creadoPor,
+                        reclamado: false
+                    }])
+                    .select("*")
+                    .single();
+
+                if (errorReto) throw errorReto;
+
+                const registros = objetivos.map(descripcion => ({
+                    reto_id: reto.id,
+                    descripcion,
+                    completado: false
+                }));
+                const { error: errorObjetivos } = await supabase
+                    .from("reto_objetivos")
+                    .insert(registros);
+
+                if (errorObjetivos) {
+                    await supabase.from("retos").delete().eq("id", reto.id);
+                    throw errorObjetivos;
+                }
+
+                return reto;
+            },
+            async () => {
+                const reto = await dbRun(
+                    `INSERT INTO retos (titulo, recompensa, creado_por, reclamado)
+                     VALUES (?, ?, ?, ?)`,
+                    [titulo, recompensa, creadoPor, 0]
+                );
+
+                for (const descripcion of objetivos) {
+                    await dbRun(
+                        `INSERT INTO reto_objetivos (reto_id, descripcion, completado)
+                         VALUES (?, ?, ?)`,
+                        [reto.id, descripcion, 0]
+                    );
+                }
+
+                return reto;
+            }
+        );
+
+        programarRespaldoAutomatico();
+
+        res.json({
+            mensaje: "Reto creado correctamente"
+        });
+    } catch (error) {
+        responderError(res, "CREAR RETO", "Error al crear reto", error);
+    }
+});
+
+app.put("/retos/objetivos/:id", protegerRuta, protegerLen, async (req, res) => {
+    const id = validarId(req.params.id);
+    const completado = req.body.completado === true;
+    const completadoEn = completado ? new Date().toISOString() : null;
+
+    if (!id) {
+        return res.status(400).json({
+            mensaje: "Id de objetivo inválido"
+        });
+    }
+
+    try {
+        await ejecutarConFallback(
+            "actualizar objetivo de reto",
+            async () => {
+                const { data: objetivo, error: errorObjetivo } = await supabase
+                    .from("reto_objetivos")
+                    .select("id, reto_id")
+                    .eq("id", id)
+                    .single();
+
+                if (errorObjetivo) throw errorObjetivo;
+
+                const { data: reto, error: errorReto } = await supabase
+                    .from("retos")
+                    .select("id, reclamado")
+                    .eq("id", objetivo.reto_id)
+                    .single();
+
+                if (errorReto) throw errorReto;
+
+                if (booleanoDb(reto.reclamado)) {
+                    throw new Error("Este reto ya fue reclamado");
+                }
+
+                return supabase
+                    .from("reto_objetivos")
+                    .update({
+                        completado,
+                        completado_en: completadoEn
+                    })
+                    .eq("id", id);
+            },
+            async () => {
+                const objetivo = await dbGet(
+                    `SELECT o.id, o.reto_id, r.reclamado
+                     FROM reto_objetivos o
+                     JOIN retos r ON r.id = o.reto_id
+                     WHERE o.id = ?`,
+                    [id]
+                );
+
+                if (!objetivo) throw new Error("Objetivo no encontrado");
+                if (booleanoDb(objetivo.reclamado)) {
+                    throw new Error("Este reto ya fue reclamado");
+                }
+
+                return dbRun(
+                    `UPDATE reto_objetivos
+                     SET completado = ?, completado_en = ?
+                     WHERE id = ?`,
+                    [completado ? 1 : 0, completadoEn, id]
+                );
+            }
+        );
+
+        programarRespaldoAutomatico();
+
+        res.json({
+            mensaje: completado ? "Objetivo completado" : "Objetivo pendiente"
+        });
+    } catch (error) {
+        responderError(res, "ACTUALIZAR OBJETIVO", "Error al actualizar objetivo", error);
+    }
+});
+
+app.post("/retos/:id/reclamar", protegerRuta, protegerLen, async (req, res) => {
+    const id = validarId(req.params.id);
+    const usuario = req.session.usuario;
+    const reclamadoEn = new Date().toISOString();
+
+    if (!id) {
+        return res.status(400).json({
+            mensaje: "Id de reto inválido"
+        });
+    }
+
+    try {
+        const reto = await datosConFallback(
+            "revisar recompensa",
+            async () => {
+                const { data: retoData, error: errorReto } = await supabase
+                    .from("retos")
+                    .select("*")
+                    .eq("id", id)
+                    .single();
+
+                if (errorReto) throw errorReto;
+
+                const { data: objetivosData, error: errorObjetivos } = await supabase
+                    .from("reto_objetivos")
+                    .select("*")
+                    .eq("reto_id", id)
+                    .order("id", { ascending: true });
+
+                if (errorObjetivos) throw errorObjetivos;
+
+                return formatearRetos([retoData], objetivosData)[0];
+            },
+            async () => {
+                const retoData = await dbGet(
+                    `SELECT id, titulo, recompensa, creado_por, reclamado,
+                            reclamado_por, reclamado_en, creado_en
+                     FROM retos
+                     WHERE id = ?`,
+                    [id]
+                );
+
+                if (!retoData) throw new Error("Reto no encontrado");
+
+                const objetivosData = await dbAll(
+                    `SELECT id, reto_id, descripcion, completado, completado_en
+                     FROM reto_objetivos
+                     WHERE reto_id = ?
+                     ORDER BY id ASC`,
+                    [id]
+                );
+
+                return formatearRetos([retoData], objetivosData)[0];
+            }
+        );
+
+        if (!reto) {
+            return res.status(404).json({
+                mensaje: "Reto no encontrado"
+            });
+        }
+
+        if (reto.total_objetivos === 0 || reto.completados < reto.total_objetivos) {
+            return res.status(400).json({
+                mensaje: "Todavía faltan objetivos por completar"
+            });
+        }
+
+        if (!reto.reclamado) {
+            await ejecutarConFallback(
+                "reclamar recompensa",
+                () => supabase
+                    .from("retos")
+                    .update({
+                        reclamado: true,
+                        reclamado_por: usuario,
+                        reclamado_en: reclamadoEn
+                    })
+                    .eq("id", id),
+                () => dbRun(
+                    `UPDATE retos
+                     SET reclamado = ?, reclamado_por = ?, reclamado_en = ?
+                     WHERE id = ?`,
+                    [1, usuario, reclamadoEn, id]
+                )
+            );
+        }
+
+        programarRespaldoAutomatico();
+
+        res.json({
+            mensaje: "Recompensa desbloqueada",
+            titulo: reto.titulo,
+            recompensa: reto.recompensa
+        });
+    } catch (error) {
+        responderError(res, "RECLAMAR RECOMPENSA", "Error al reclamar recompensa", error);
+    }
+});
+
+app.delete("/retos/:id", protegerRuta, protegerMichel, async (req, res) => {
+    const id = validarId(req.params.id);
+
+    if (!id) {
+        return res.status(400).json({
+            mensaje: "Id de reto inválido"
+        });
+    }
+
+    try {
+        await ejecutarConFallback(
+            "eliminar reto",
+            async () => {
+                const { error: errorObjetivos } = await supabase
+                    .from("reto_objetivos")
+                    .delete()
+                    .eq("reto_id", id);
+
+                if (errorObjetivos) throw errorObjetivos;
+
+                return supabase
+                    .from("retos")
+                    .delete()
+                    .eq("id", id);
+            },
+            async () => {
+                await dbRun("DELETE FROM reto_objetivos WHERE reto_id = ?", [id]);
+                return dbRun("DELETE FROM retos WHERE id = ?", [id]);
+            }
+        );
+
+        programarRespaldoAutomatico();
+
+        res.json({
+            mensaje: "Reto eliminado"
+        });
+    } catch (error) {
+        responderError(res, "ELIMINAR RETO", "Error al eliminar reto", error);
     }
 });
 
