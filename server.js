@@ -359,7 +359,7 @@ function protegerLen(req, res, next) {
     }
 
     res.status(403).json({
-        mensaje: "Solo Len puede completar retos"
+        mensaje: "Solo Len puede completar misiones"
     });
 }
 
@@ -1153,7 +1153,7 @@ app.get("/retos", protegerRuta, async (req, res) => {
 
         res.json(retos || []);
     } catch (error) {
-        responderError(res, "CARGAR RETOS", "Error al cargar retos", error);
+        responderError(res, "CARGAR RETOS", "Error al cargar misiones", error);
     }
 });
 
@@ -1226,10 +1226,10 @@ app.post("/retos", protegerRuta, protegerMichel, async (req, res) => {
         programarRespaldoAutomatico();
 
         res.json({
-            mensaje: "Reto creado correctamente"
+            mensaje: "Misión creada correctamente"
         });
     } catch (error) {
-        responderError(res, "CREAR RETO", "Error al crear reto", error);
+        responderError(res, "CREAR RETO", "Error al crear misión", error);
     }
 });
 
@@ -1265,7 +1265,7 @@ app.put("/retos/objetivos/:id", protegerRuta, protegerLen, async (req, res) => {
                 if (errorReto) throw errorReto;
 
                 if (booleanoDb(reto.reclamado)) {
-                    throw new Error("Este reto ya fue reclamado");
+                    throw new Error("Esta misión ya fue reclamada");
                 }
 
                 return supabase
@@ -1287,7 +1287,7 @@ app.put("/retos/objetivos/:id", protegerRuta, protegerLen, async (req, res) => {
 
                 if (!objetivo) throw new Error("Objetivo no encontrado");
                 if (booleanoDb(objetivo.reclamado)) {
-                    throw new Error("Este reto ya fue reclamado");
+                    throw new Error("Esta misión ya fue reclamada");
                 }
 
                 return dbRun(
@@ -1316,7 +1316,7 @@ app.post("/retos/:id/reclamar", protegerRuta, protegerLen, async (req, res) => {
 
     if (!id) {
         return res.status(400).json({
-            mensaje: "Id de reto inválido"
+            mensaje: "Id de misión inválido"
         });
     }
 
@@ -1351,7 +1351,7 @@ app.post("/retos/:id/reclamar", protegerRuta, protegerLen, async (req, res) => {
                     [id]
                 );
 
-                if (!retoData) throw new Error("Reto no encontrado");
+                if (!retoData) throw new Error("Misión no encontrada");
 
                 const objetivosData = await dbAll(
                     `SELECT id, reto_id, descripcion, completado, completado_en
@@ -1367,7 +1367,7 @@ app.post("/retos/:id/reclamar", protegerRuta, protegerLen, async (req, res) => {
 
         if (!reto) {
             return res.status(404).json({
-                mensaje: "Reto no encontrado"
+                mensaje: "Misión no encontrada"
             });
         }
 
@@ -1414,7 +1414,7 @@ app.delete("/retos/:id", protegerRuta, protegerMichel, async (req, res) => {
 
     if (!id) {
         return res.status(400).json({
-            mensaje: "Id de reto inválido"
+            mensaje: "Id de misión inválido"
         });
     }
 
@@ -1443,10 +1443,10 @@ app.delete("/retos/:id", protegerRuta, protegerMichel, async (req, res) => {
         programarRespaldoAutomatico();
 
         res.json({
-            mensaje: "Reto eliminado"
+            mensaje: "Misión eliminada"
         });
     } catch (error) {
-        responderError(res, "ELIMINAR RETO", "Error al eliminar reto", error);
+        responderError(res, "ELIMINAR RETO", "Error al eliminar misión", error);
     }
 });
 

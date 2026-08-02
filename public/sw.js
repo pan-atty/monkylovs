@@ -1,4 +1,4 @@
-const CACHE_NAME = "monky-agenda-v5";
+const CACHE_NAME = "monky-agenda-v6";
 
 const ARCHIVOS = [
     "/",

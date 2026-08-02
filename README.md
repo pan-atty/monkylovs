@@ -11,7 +11,7 @@ https://monkylovs.onrender.com/index.html
 - Calendario de eventos compartido.
 - Album de fotos con imagenes guardadas en Supabase Storage.
 - Notitas de amor y lugares por visitar.
-- Retos de Amor: Michel crea retos con objetivos y Len los completa para reclamar recompensas.
+- Misiones bonitas: Michel crea objetivos y Len los completa para reclamar recompensas.
 
 ## Portafolio y privacidad
 

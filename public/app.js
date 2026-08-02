@@ -597,7 +597,7 @@ async function guardarReto(evento) {
     evento.preventDefault();
 
     if (usuarioActual !== "michel") {
-        alert("Solo Michel puede crear retos");
+        alert("Solo Michel puede crear misiones");
         return;
     }
 
@@ -675,7 +675,7 @@ function renderizarAccionesReto(reto) {
                     class="btn-eliminar-reto"
                     onclick="eliminarReto(${Number(reto.id)})"
                 >
-                    🗑️ Eliminar reto
+                    Eliminar misión
                 </button>
             ` : ""}
         </div>
@@ -692,7 +692,7 @@ async function cargarRetos() {
         if (retos.length === 0) {
             lista.innerHTML = `
                 <p class="estado-vacio">
-                    Todavía no hay retos activos.
+                    Todavía no hay misiones activas.
                 </p>
             `;
             return;
@@ -742,7 +742,7 @@ async function cargarRetos() {
 
 async function cambiarObjetivoReto(id, completado) {
     if (usuarioActual !== "len") {
-        alert("Solo Len puede completar retos");
+        alert("Solo Len puede completar misiones");
         await cargarRetos();
         return;
     }
@@ -783,11 +783,11 @@ async function reclamarRecompensa(id) {
 
 async function eliminarReto(id) {
     if (usuarioActual !== "michel") {
-        alert("Solo Michel puede eliminar retos");
+        alert("Solo Michel puede eliminar misiones");
         return;
     }
 
-    const confirmar = confirm("¿Eliminar este reto?");
+    const confirmar = confirm("¿Eliminar esta misión?");
 
     if (!confirmar) return;
 
