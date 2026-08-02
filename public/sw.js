@@ -1,4 +1,4 @@
-const CACHE_NAME = "monky-agenda-v3";
+const CACHE_NAME = "monky-agenda-v4";
 
 const ARCHIVOS = [
     "/",
@@ -7,7 +7,11 @@ const ARCHIVOS = [
     "/style.css",
     "/app.js",
     "/login.js",
-    "/manifest.json"
+    "/manifest.json",
+    "/icon-couple-192.png",
+    "/icon-couple-512.png",
+    "/apple-touch-icon.png",
+    "/mnkys.png"
 ];
 
 self.addEventListener("install", event => {
