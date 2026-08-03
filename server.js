@@ -1234,35 +1234,6 @@ app.post("/flores", protegerRuta, protegerMichel, async (req, res) => {
     }
 });
 
-app.delete("/flores/:id", protegerRuta, protegerMichel, async (req, res) => {
-    const id = validarId(req.params.id);
-
-    if (!id) {
-        return res.status(400).json({
-            mensaje: "Id de flores inválido"
-        });
-    }
-
-    try {
-        await ejecutarConFallback(
-            "eliminar flores",
-            () => supabase
-                .from("flores")
-                .delete()
-                .eq("id", id),
-            () => dbRun("DELETE FROM flores WHERE id = ?", [id])
-        );
-
-        programarRespaldoAutomatico();
-
-        res.json({
-            mensaje: "Registro de flores eliminado"
-        });
-    } catch (error) {
-        responderError(res, "ELIMINAR FLORES", "Error al eliminar flores", error);
-    }
-});
-
 app.get("/retos", protegerRuta, async (req, res) => {
     try {
         const retos = await datosConFallback(

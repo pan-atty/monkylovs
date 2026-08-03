@@ -519,11 +519,19 @@ form {
     overflow-wrap: anywhere;
 }
 
+.flores form {
+    max-width: 360px;
+    margin: 18px auto 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
 #listaEventos,
 #listaNotas,
 #listaRetos,
-#listaLugares,
-#listaFlores {
+#listaLugares {
     display: grid;
     gap: 14px;
 }
@@ -537,8 +545,7 @@ form {
 .reto-card,
 .lugar-card,
 .aviso-card,
-.foto-card,
-.flor-card {
+.foto-card {
     border: 1px solid rgba(190, 112, 146, .24);
     border-radius: var(--radius);
     background:
@@ -552,8 +559,7 @@ form {
 .nota-card:hover,
 .reto-card:hover,
 .lugar-card:hover,
-.foto-card:hover,
-.flor-card:hover {
+.foto-card:hover {
     transform: translateY(-3px);
     border-color: rgba(185, 52, 112, .32);
     box-shadow: 0 20px 38px rgba(91, 45, 70, .14);
@@ -563,8 +569,7 @@ form {
 .nota-card,
 .reto-card,
 .lugar-card,
-.aviso-card,
-.flor-card {
+.aviso-card {
     padding: 16px;
 }
 
@@ -582,37 +587,9 @@ form {
 .foto-card p,
 .nota-card p,
 .reto-card p,
-.lugar-card p,
-.flor-card p {
+.lugar-card p {
     color: var(--muted);
     line-height: 1.48;
-}
-
-.flor-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    border-left: 4px solid var(--rose);
-}
-
-.flor-card h3 {
-    margin-bottom: 6px;
-    color: var(--rose-deep);
-    font-size: 1.28rem;
-}
-
-.flor-card p {
-    margin-bottom: 5px;
-}
-
-.btn-eliminar-flor {
-    flex: 0 0 44px;
-    width: 44px;
-    min-width: 44px;
-    min-height: 40px;
-    padding: 0;
-    background: linear-gradient(135deg, var(--danger), var(--rose-deep));
 }
 
 #calendario h3 {
@@ -1129,15 +1106,13 @@ form {
 
     .barra-usuario,
     .lugar-card,
-    .flor-card,
     .reto-encabezado {
         align-items: stretch;
         flex-direction: column;
     }
 
     #btnCerrarSesion,
-    .lugar-card button,
-    .flor-card button {
+    .lugar-card button {
         width: 100%;
         min-width: 100%;
     }

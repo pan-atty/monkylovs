@@ -501,27 +501,16 @@ async function guardarFlores(evento) {
         return;
     }
 
-    const datos = {
-        cantidad: Number(document.getElementById("cantidadFlores").value || 1)
-    };
-
-    if (!Number.isInteger(datos.cantidad) || datos.cantidad < 1) {
-        alert("Pon una cantidad válida");
-        return;
-    }
-
     try {
         const resultado = await obtenerJson("/flores", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(datos)
+            body: JSON.stringify({ cantidad: 1 })
         });
 
         alert(resultado.mensaje);
-        document.getElementById("formFlores").reset();
-        document.getElementById("cantidadFlores").value = "1";
         await cargarFlores();
     } catch (error) {
         mostrarError(error);
@@ -530,72 +519,13 @@ async function guardarFlores(evento) {
 
 async function cargarFlores() {
     const total = document.getElementById("totalFlores");
-    const lista = document.getElementById("listaFlores");
 
     try {
         const datos = await obtenerJson("/flores");
-        const registros = listaSegura(datos.registros);
-
         total.textContent = Number(datos.total || 0);
-        lista.innerHTML = "";
-
-        if (registros.length === 0) {
-            lista.innerHTML = `
-                <p class="estado-vacio">
-                    Aquí se irá guardando cada vez que Michel le dé flores a Len.
-                </p>
-            `;
-            return;
-        }
-
-        registros.forEach(flor => {
-            const div = document.createElement("div");
-            const cantidad = Number(flor.cantidad) || 1;
-
-            div.classList.add("flor-card");
-            div.innerHTML = `
-                <div>
-                    <h3>${cantidad === 1 ? "1 vez con flores" : `${cantidad} veces con flores`}</h3>
-                </div>
-
-                ${usuarioActual === "michel" ? `
-                    <button
-                        type="button"
-                        class="btn-eliminar-flor"
-                        onclick="eliminarFlores(${Number(flor.id)})"
-                    >
-                        🗑️
-                    </button>
-                ` : ""}
-            `;
-
-            lista.appendChild(div);
-        });
     } catch (error) {
-        lista.innerHTML = `<p class="estado-error">${escaparHtml(error.message)}</p>`;
+        total.textContent = "0";
         console.error(error);
-    }
-}
-
-async function eliminarFlores(id) {
-    if (usuarioActual !== "michel") {
-        alert("Solo Michel puede eliminar registros de flores");
-        return;
-    }
-
-    const confirmar = confirm("¿Eliminar este registro de flores?");
-
-    if (!confirmar) return;
-
-    try {
-        const resultado = await obtenerJson(`/flores/${id}`, {
-            method: "DELETE"
-        });
-
-        alert(resultado.mensaje);
-        await cargarFlores();
-    } catch (error) {
-        mostrarError(error);
     }
 }
 
