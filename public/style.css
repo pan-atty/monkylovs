@@ -3,25 +3,26 @@
 }
 
 :root {
-    --bg: #fff7fa;
-    --bg-2: #f8f1ff;
-    --surface: rgba(255, 255, 255, .78);
-    --surface-strong: rgba(255, 255, 255, .94);
-    --surface-solid: #ffffff;
-    --ink: #332334;
-    --muted: #7c6879;
-    --line: rgba(203, 131, 163, .26);
-    --rose: #e96f9f;
-    --rose-deep: #b93470;
-    --plum: #693556;
-    --lavender: #9d86d6;
-    --champagne: #f4bd82;
-    --sage: #78a68e;
-    --teal: #6d9d9a;
-    --danger: #d94770;
+    --bg: #fff8f3;
+    --bg-2: #fff0f7;
+    --paper: #fffdf8;
+    --surface: rgba(255, 253, 248, .86);
+    --surface-strong: rgba(255, 253, 248, .96);
+    --surface-solid: #fffdf8;
+    --ink: #352338;
+    --muted: #836f7f;
+    --line: rgba(190, 112, 146, .26);
+    --rose: #ea7aa7;
+    --rose-deep: #bd3f74;
+    --plum: #673456;
+    --lavender: #a68ed7;
+    --champagne: #f4c484;
+    --sage: #8ead91;
+    --teal: #699d98;
+    --danger: #d74b73;
     --radius: 8px;
-    --shadow: 0 22px 55px rgba(92, 45, 70, .16);
-    --shadow-soft: 0 12px 30px rgba(92, 45, 70, .11);
+    --shadow: 0 22px 46px rgba(91, 45, 70, .14);
+    --shadow-soft: 0 12px 26px rgba(91, 45, 70, .1);
 }
 
 html {
@@ -38,8 +39,8 @@ body {
     color: var(--ink);
     font-family: "Segoe UI", Arial, sans-serif;
     background:
-        linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .16)),
-        linear-gradient(135deg, #fff7fa 0%, #fff0f5 34%, #f7f2ff 67%, #fff6eb 100%);
+        linear-gradient(180deg, rgba(255, 255, 255, .48), rgba(255, 255, 255, .18)),
+        linear-gradient(135deg, #fff8f3 0%, #fff0f7 36%, #f7f0ff 68%, #fff4df 100%);
 }
 
 body::before {
@@ -49,10 +50,10 @@ body::before {
     z-index: -2;
     pointer-events: none;
     background-image:
-        linear-gradient(115deg, transparent 0 20%, rgba(185, 52, 112, .055) 20% 20.5%, transparent 20.5% 48%, rgba(157, 134, 214, .055) 48% 48.5%, transparent 48.5% 100%),
-        linear-gradient(rgba(105, 53, 86, .045) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(105, 53, 86, .035) 1px, transparent 1px);
-    background-size: 260px 260px, 44px 44px, 44px 44px;
+        repeating-linear-gradient(0deg, transparent 0 31px, rgba(190, 112, 146, .055) 32px),
+        linear-gradient(115deg, transparent 0 19%, rgba(189, 63, 116, .052) 19% 19.5%, transparent 19.5% 51%, rgba(166, 142, 215, .052) 51% 51.5%, transparent 51.5% 100%),
+        linear-gradient(90deg, rgba(255,255,255,.4), transparent 18% 82%, rgba(255,255,255,.35));
+    background-size: 100% 32px, 250px 250px, 100% 100%;
     mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.72) 58%, transparent 100%);
 }
 
@@ -63,8 +64,9 @@ body::after {
     z-index: -1;
     pointer-events: none;
     background:
-        linear-gradient(90deg, rgba(255,255,255,.42), transparent 24% 76%, rgba(255,255,255,.38)),
-        linear-gradient(180deg, transparent 0%, rgba(255,255,255,.42) 100%);
+        linear-gradient(90deg, rgba(255,255,255,.48), transparent 24% 76%, rgba(255,255,255,.38)),
+        repeating-linear-gradient(90deg, transparent 0 112px, rgba(244,196,132,.08) 112px 114px),
+        linear-gradient(180deg, transparent 0%, rgba(255,255,255,.44) 100%);
 }
 
 button,
@@ -80,7 +82,7 @@ button {
     border: 0;
     border-radius: var(--radius);
     color: white;
-    background: linear-gradient(135deg, var(--plum), var(--rose-deep) 58%, var(--rose));
+    background: linear-gradient(135deg, #8f3b69, var(--rose-deep) 58%, #e15a94);
     font-size: 1rem;
     font-weight: 800;
     cursor: pointer;
@@ -121,7 +123,7 @@ textarea {
     border: 1px solid var(--line);
     border-radius: var(--radius);
     color: var(--ink);
-    background: rgba(255, 251, 253, .92);
+    background: rgba(255, 253, 248, .96);
     font-size: .96rem;
     outline: none;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
@@ -158,13 +160,14 @@ h1,
 h2,
 h3,
 h4 {
+    font-family: Georgia, "Times New Roman", serif;
     letter-spacing: 0;
 }
 
 h1 {
     margin: 8px 0 0;
     color: var(--ink);
-    font-size: 3.1rem;
+    font-size: 3rem;
     line-height: .98;
 }
 
@@ -182,7 +185,7 @@ h2 {
     padding: 16px clamp(14px, 4vw, 42px) 12px;
     border-bottom: 1px solid rgba(203, 131, 163, .22);
     background:
-        linear-gradient(180deg, rgba(255, 247, 250, .92), rgba(255, 247, 250, .76)),
+        linear-gradient(180deg, rgba(255, 253, 248, .94), rgba(255, 244, 249, .78)),
         rgba(255, 255, 255, .55);
     -webkit-backdrop-filter: blur(22px) saturate(1.1);
     backdrop-filter: blur(22px) saturate(1.1);
@@ -202,10 +205,10 @@ h2 {
     padding: 7px 11px;
     border: 1px solid rgba(233, 111, 159, .22);
     border-radius: 999px;
-    color: var(--rose-deep);
+    color: var(--plum);
     background:
-        linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,244,248,.82)),
-        linear-gradient(135deg, rgba(233,111,159,.12), rgba(157,134,214,.12));
+        linear-gradient(135deg, rgba(255,253,248,.96), rgba(255,236,245,.9)),
+        linear-gradient(135deg, rgba(233,111,159,.13), rgba(244,196,132,.16));
     font-size: .82rem;
     font-weight: 850;
     box-shadow: 0 8px 20px rgba(92, 45, 70, .08);
@@ -235,7 +238,7 @@ h2 {
     border: 1px solid rgba(185, 52, 112, .16);
     border-radius: 999px;
     color: var(--plum);
-    background: rgba(255, 255, 255, .74);
+    background: rgba(255, 253, 248, .78);
     text-decoration: none;
     font-size: .94rem;
     font-weight: 850;
@@ -245,7 +248,7 @@ h2 {
 
 .menu-principal a:hover {
     color: white;
-    background: linear-gradient(135deg, var(--plum), var(--rose-deep));
+    background: linear-gradient(135deg, var(--plum), var(--rose-deep), var(--rose));
     box-shadow: 0 12px 24px rgba(185, 52, 112, .23);
     transform: translateY(-2px);
 }
@@ -265,7 +268,8 @@ h2 {
     padding: 12px;
     border: 1px solid rgba(203, 131, 163, .22);
     border-radius: var(--radius);
-    background: var(--surface);
+    background:
+        linear-gradient(180deg, rgba(255,253,248,.94), rgba(255,246,251,.9));
     box-shadow: var(--shadow-soft);
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
@@ -300,10 +304,10 @@ h2 {
     position: relative;
     overflow: hidden;
     padding: clamp(18px, 3vw, 30px);
-    border: 1px solid rgba(203, 131, 163, .24);
+    border: 1px solid rgba(190, 112, 146, .28);
     border-radius: var(--radius);
     background:
-        linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.7)),
+        linear-gradient(180deg, rgba(255,253,248,.94), rgba(255,247,250,.88)),
         var(--surface);
     box-shadow: var(--shadow);
     -webkit-backdrop-filter: blur(18px);
@@ -314,18 +318,19 @@ h2 {
     content: "";
     position: absolute;
     inset: 0 0 auto;
-    height: 4px;
-    background: linear-gradient(90deg, var(--rose), var(--lavender), var(--champagne), var(--sage));
-    background-size: 180% 100%;
-    animation: ribbonFlow 9s ease-in-out infinite;
+    height: 7px;
+    background:
+        repeating-linear-gradient(90deg, var(--rose) 0 18px, #ffd7e5 18px 28px, var(--lavender) 28px 43px, #ffe6bd 43px 55px, var(--sage) 55px 70px);
+    background-size: 220px 100%;
+    animation: ribbonFlow 12s linear infinite;
 }
 
 .panel::after {
     content: "";
     position: absolute;
-    inset: 4px 0 auto;
+    inset: 7px 14px auto;
     height: 1px;
-    background: rgba(255,255,255,.82);
+    background: repeating-linear-gradient(90deg, rgba(103,52,86,.18) 0 6px, transparent 6px 12px);
 }
 
 .section-heading {
@@ -346,7 +351,7 @@ h2 {
     border: 1px solid rgba(203, 131, 163, .24);
     border-radius: var(--radius);
     background:
-        linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,240,246,.86)),
+        linear-gradient(135deg, rgba(255,253,248,.96), rgba(255,236,246,.9)),
         linear-gradient(135deg, rgba(233, 111, 159, .18), rgba(157, 134, 214, .16));
     font-size: 1.45rem;
     box-shadow: 0 10px 22px rgba(92, 45, 70, .08);
@@ -359,24 +364,24 @@ form {
     border: 1px solid rgba(203, 131, 163, .23);
     border-radius: var(--radius);
     background:
-        linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,248,251,.86));
+        linear-gradient(180deg, rgba(255,253,248,.96), rgba(255,247,250,.9));
     box-shadow: var(--shadow-soft);
 }
 
 .perfil-pareja {
     position: relative;
-    min-height: 360px;
+    min-height: 390px;
     overflow: hidden;
     display: grid;
     align-content: end;
     padding: clamp(28px, 5vw, 52px);
-    border: 1px solid rgba(255,255,255,.48);
+    border: 10px solid rgba(255,253,248,.92);
     border-radius: var(--radius);
     color: white;
     background:
-        linear-gradient(135deg, rgba(48, 28, 48, .78), rgba(105, 53, 86, .62) 44%, rgba(233, 111, 159, .3)),
+        linear-gradient(135deg, rgba(54, 32, 53, .74), rgba(103, 52, 86, .58) 46%, rgba(234, 122, 167, .28)),
         url("/icon-couple-512.png") center/cover;
-    box-shadow: 0 26px 70px rgba(92, 45, 70, .22);
+    box-shadow: 0 26px 70px rgba(91, 45, 70, .2), inset 0 0 0 1px rgba(103,52,86,.12);
     animation: fadeUp .65s ease both;
 }
 
@@ -385,18 +390,19 @@ form {
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(180deg, rgba(0,0,0,.08), transparent 32%, rgba(32,18,31,.46) 100%),
-        linear-gradient(90deg, rgba(255,255,255,.2), transparent 35% 100%);
+        linear-gradient(180deg, rgba(0,0,0,.06), transparent 34%, rgba(39,19,37,.48) 100%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 1px, transparent 1px 34px);
 }
 
 .perfil-pareja::after {
     content: "";
     position: absolute;
     inset: auto 0 0;
-    height: 5px;
-    background: linear-gradient(90deg, var(--rose), var(--lavender), var(--champagne), var(--sage));
-    background-size: 180% 100%;
-    animation: ribbonFlow 8s ease-in-out infinite;
+    height: 8px;
+    background:
+        repeating-linear-gradient(90deg, var(--rose) 0 18px, #ffd7e5 18px 28px, var(--lavender) 28px 43px, #ffe6bd 43px 55px, var(--sage) 55px 70px);
+    background-size: 220px 100%;
+    animation: ribbonFlow 12s linear infinite;
 }
 
 .perfil-pareja > * {
@@ -407,7 +413,7 @@ form {
 .perfil-pareja h2 {
     max-width: 720px;
     color: white;
-    font-size: 3.35rem;
+    font-size: 3.25rem;
     line-height: .98;
     text-shadow: 0 4px 18px rgba(0,0,0,.24);
 }
@@ -433,7 +439,7 @@ form {
     padding: 18px;
     border: 1px solid rgba(255,255,255,.24);
     border-radius: var(--radius);
-    background: rgba(255,255,255,.15);
+    background: rgba(255,253,248,.16);
     -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
@@ -469,7 +475,7 @@ form {
     border: 1px solid rgba(233, 111, 159, .24);
     border-radius: var(--radius);
     background:
-        linear-gradient(135deg, rgba(255,255,255,.86), rgba(255,238,245,.92) 58%, rgba(248,241,255,.9)),
+        linear-gradient(135deg, rgba(255,253,248,.9), rgba(255,235,244,.94) 58%, rgba(248,241,255,.9)),
         linear-gradient(135deg, rgba(233,111,159,.18), rgba(157,134,214,.16));
     text-align: center;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.9), var(--shadow-soft);
@@ -533,10 +539,10 @@ form {
 .aviso-card,
 .foto-card,
 .flor-card {
-    border: 1px solid rgba(203, 131, 163, .24);
+    border: 1px solid rgba(190, 112, 146, .24);
     border-radius: var(--radius);
     background:
-        linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,249,252,.92));
+        linear-gradient(180deg, rgba(255,253,248,.98), rgba(255,248,251,.94));
     box-shadow: var(--shadow-soft);
     animation: fadeUp .45s ease both;
     transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
@@ -550,7 +556,7 @@ form {
 .flor-card:hover {
     transform: translateY(-3px);
     border-color: rgba(185, 52, 112, .32);
-    box-shadow: 0 20px 42px rgba(92, 45, 70, .15);
+    box-shadow: 0 20px 38px rgba(91, 45, 70, .14);
 }
 
 .evento-card,
@@ -665,24 +671,54 @@ form {
 
 #galeria {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
     margin-top: 18px;
 }
 
 .foto-card {
+    position: relative;
     overflow: hidden;
-    padding: 10px;
+    padding: 10px 10px 14px;
+    background:
+        linear-gradient(180deg, #fffdf8, #fff8fb);
+}
+
+.foto-card::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 72px;
+    height: 18px;
+    border: 1px solid rgba(190,112,146,.18);
+    border-radius: 3px;
+    background: rgba(255, 231, 210, .68);
+    box-shadow: 0 6px 12px rgba(91,45,70,.08);
+    transform: translateX(-50%) rotate(-2deg);
+    z-index: 1;
 }
 
 .foto-card img {
     display: block;
     width: 100%;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 4 / 3.15;
     object-fit: cover;
     border-radius: 6px;
     cursor: zoom-in;
+    box-shadow: 0 8px 18px rgba(91,45,70,.12);
     transition: transform .28s ease, filter .28s ease;
+}
+
+.foto-card p {
+    margin: 10px 4px 0;
+    font-weight: 750;
+}
+
+.foto-card button {
+    width: auto;
+    min-height: 40px;
+    margin: 12px 4px 0;
 }
 
 .foto-card:hover img {
@@ -1066,7 +1102,8 @@ form {
     }
 
     .perfil-pareja {
-        min-height: 330px;
+        min-height: 340px;
+        border-width: 7px;
         background-position: center;
     }
 
@@ -1128,6 +1165,40 @@ form {
     #listaEventos {
         grid-template-columns: 1fr;
     }
+
+    #galeria {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .foto-card {
+        padding: 7px 7px 10px;
+    }
+
+    .foto-card::before {
+        top: 5px;
+        width: 48px;
+        height: 13px;
+    }
+
+    .foto-card img {
+        aspect-ratio: 1 / 1.08;
+    }
+
+    .foto-card p {
+        margin: 8px 2px 0;
+        font-size: .82rem;
+        line-height: 1.32;
+        overflow-wrap: anywhere;
+    }
+
+    .foto-card button {
+        width: 100%;
+        min-height: 36px;
+        margin: 10px 0 0;
+        padding: 8px 7px;
+        font-size: .82rem;
+    }
 }
 
 @media (max-width: 430px) {
@@ -1161,6 +1232,18 @@ form {
 
     .flores-resumen span {
         font-size: 4rem;
+    }
+
+    #galeria {
+        gap: 10px;
+    }
+
+    .foto-card p {
+        font-size: .78rem;
+    }
+
+    .foto-card button {
+        font-size: .78rem;
     }
 }
 

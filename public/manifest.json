@@ -4,8 +4,8 @@
     "description": "Agenda privada de Michel y Len",
     "start_url": "/login.html",
     "display": "standalone",
-    "background_color": "#fff7fa",
-    "theme_color": "#b93470",
+    "background_color": "#fff8f3",
+    "theme_color": "#bd3f74",
     "icons": [
         {
             "src": "/icon-couple-192.png",
