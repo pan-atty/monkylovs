@@ -1,4 +1,4 @@
-const CACHE_NAME = "monky-agenda-v7";
+const CACHE_NAME = "monky-agenda-v8";
 
 const ARCHIVOS = [
     "/",
@@ -41,6 +41,7 @@ self.addEventListener("fetch", event => {
         event.request.url.includes("/fotos") ||
         event.request.url.includes("/nota") ||
         event.request.url.includes("/notas") ||
+        event.request.url.includes("/flores") ||
         event.request.url.includes("/retos") ||
         event.request.url.includes("/lugar") ||
         event.request.url.includes("/lugares")) {

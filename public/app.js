@@ -51,6 +51,14 @@ function listaSegura(datos) {
     return Array.isArray(datos) ? datos : [];
 }
 
+function fechaLocalIso(fecha = new Date()) {
+    const anio = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+    const dia = String(fecha.getDate()).padStart(2, "0");
+
+    return `${anio}-${mes}-${dia}`;
+}
+
 function cargarImagenDesdeArchivo(archivo) {
     return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(archivo);
@@ -135,6 +143,7 @@ function registrarEventosFormulario() {
     document.getElementById("formNota").addEventListener("submit", guardarNota);
     document.getElementById("formLugar").addEventListener("submit", guardarLugar);
     document.getElementById("formReto").addEventListener("submit", guardarReto);
+    document.getElementById("formFlores").addEventListener("submit", guardarFlores);
     document.getElementById("btnCerrarSesion").addEventListener("click", cerrarSesion);
     document.getElementById("btnNotificaciones").addEventListener("click", activarNotificaciones);
     document.getElementById("cerrar").addEventListener("click", cerrarVisor);
@@ -142,7 +151,10 @@ function registrarEventosFormulario() {
 
     if (usuarioActual === "michel") {
         document.getElementById("formReto").classList.remove("oculto");
+        document.getElementById("formFlores").classList.remove("oculto");
     }
+
+    document.getElementById("fechaFlores").value = fechaLocalIso();
 
     document.addEventListener("click", function(evento) {
         if (evento.target.matches(".foto-card img")) {
@@ -489,6 +501,131 @@ function cargarPerfilPareja() {
     const diasAniversario = Math.ceil(diferenciaAniversario / (1000 * 60 * 60 * 24));
 
     document.getElementById("diasAniversario").textContent = diasAniversario;
+}
+
+function fechaBonita(fecha) {
+    if (!fecha) return "Sin fecha";
+
+    const fechaObj = new Date(`${fecha}T00:00:00`);
+
+    if (Number.isNaN(fechaObj.getTime())) return fecha;
+
+    return fechaObj.toLocaleDateString("es-MX", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+    });
+}
+
+async function guardarFlores(evento) {
+    evento.preventDefault();
+
+    if (usuarioActual !== "michel") {
+        alert("Solo Michel puede sumar flores");
+        return;
+    }
+
+    const datos = {
+        cantidad: Number(document.getElementById("cantidadFlores").value || 1),
+        fecha: document.getElementById("fechaFlores").value,
+        nota: document.getElementById("notaFlores").value
+    };
+
+    if (!Number.isInteger(datos.cantidad) || datos.cantidad < 1) {
+        alert("Pon una cantidad válida");
+        return;
+    }
+
+    try {
+        const resultado = await obtenerJson("/flores", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datos)
+        });
+
+        alert(resultado.mensaje);
+        document.getElementById("formFlores").reset();
+        document.getElementById("cantidadFlores").value = "1";
+        document.getElementById("fechaFlores").value = fechaLocalIso();
+        await cargarFlores();
+    } catch (error) {
+        mostrarError(error);
+    }
+}
+
+async function cargarFlores() {
+    const total = document.getElementById("totalFlores");
+    const lista = document.getElementById("listaFlores");
+
+    try {
+        const datos = await obtenerJson("/flores");
+        const registros = listaSegura(datos.registros);
+
+        total.textContent = Number(datos.total || 0);
+        lista.innerHTML = "";
+
+        if (registros.length === 0) {
+            lista.innerHTML = `
+                <p class="estado-vacio">
+                    Aquí se irá guardando cada vez que Michel le dé flores a Len.
+                </p>
+            `;
+            return;
+        }
+
+        registros.forEach(flor => {
+            const div = document.createElement("div");
+            const cantidad = Number(flor.cantidad) || 1;
+
+            div.classList.add("flor-card");
+            div.innerHTML = `
+                <div>
+                    <h3>${cantidad === 1 ? "1 vez con flores" : `${cantidad} veces con flores`}</h3>
+                    <p>${fechaBonita(flor.fecha)}</p>
+                    ${flor.nota ? `<p>${escaparHtml(flor.nota)}</p>` : ""}
+                </div>
+
+                ${usuarioActual === "michel" ? `
+                    <button
+                        type="button"
+                        class="btn-eliminar-flor"
+                        onclick="eliminarFlores(${Number(flor.id)})"
+                    >
+                        🗑️
+                    </button>
+                ` : ""}
+            `;
+
+            lista.appendChild(div);
+        });
+    } catch (error) {
+        lista.innerHTML = `<p class="estado-error">${escaparHtml(error.message)}</p>`;
+        console.error(error);
+    }
+}
+
+async function eliminarFlores(id) {
+    if (usuarioActual !== "michel") {
+        alert("Solo Michel puede eliminar registros de flores");
+        return;
+    }
+
+    const confirmar = confirm("¿Eliminar este registro de flores?");
+
+    if (!confirmar) return;
+
+    try {
+        const resultado = await obtenerJson(`/flores/${id}`, {
+            method: "DELETE"
+        });
+
+        alert(resultado.mensaje);
+        await cargarFlores();
+    } catch (error) {
+        mostrarError(error);
+    }
 }
 
 async function guardarLugar(evento) {
@@ -936,6 +1073,15 @@ async function activarTiempoReal() {
                 {
                     event: "*",
                     schema: "public",
+                    table: "flores"
+                },
+                cargarFlores
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "*",
+                    schema: "public",
                     table: "retos"
                 },
                 cargarRetos
@@ -982,6 +1128,7 @@ async function iniciarApp() {
             cargarFotos(),
             cargarNotas(),
             cargarLugares(),
+            cargarFlores(),
             cargarRetos()
         ]);
 

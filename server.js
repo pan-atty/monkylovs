@@ -28,6 +28,7 @@ const MAINTENANCE_TABLES = [
     "fotos",
     "notas",
     "lugares",
+    "flores",
     "retos",
     "reto_objetivos"
 ];
@@ -194,6 +195,17 @@ async function inicializarBaseLocal() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT,
             visitado INTEGER DEFAULT 0
+        )
+    `);
+
+    await dbRun(`
+        CREATE TABLE IF NOT EXISTS flores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cantidad INTEGER DEFAULT 1,
+            fecha TEXT,
+            nota TEXT,
+            creado_por TEXT,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     `);
 
@@ -417,6 +429,32 @@ function limpiarObjetivos(objetivos) {
         .map(limpiarTexto)
         .filter(Boolean)
         .slice(0, 12);
+}
+
+function validarCantidadFlores(valor) {
+    const cantidad = Number(valor || 1);
+
+    if (!Number.isInteger(cantidad) || cantidad < 1 || cantidad > 999) {
+        return null;
+    }
+
+    return cantidad;
+}
+
+function formatearFlores(registros = []) {
+    const lista = registros.map(flor => ({
+        id: flor.id,
+        cantidad: Number(flor.cantidad) || 1,
+        fecha: flor.fecha || null,
+        nota: flor.nota || "",
+        creado_por: flor.creado_por || null,
+        creado_en: flor.creado_en || null
+    }));
+
+    return {
+        total: lista.reduce((suma, flor) => suma + flor.cantidad, 0),
+        registros: lista
+    };
 }
 
 function responderError(res, operacion, mensaje, error) {
@@ -1102,6 +1140,110 @@ app.delete("/lugar/:id", protegerRuta, async (req, res) => {
         });
     } catch (error) {
         responderError(res, "ELIMINAR LUGAR", "Error al eliminar lugar", error);
+    }
+});
+
+app.get("/flores", protegerRuta, async (req, res) => {
+    try {
+        const flores = await datosConFallback(
+            "cargar flores",
+            async () => {
+                const { data, error } = await supabase
+                    .from("flores")
+                    .select("*")
+                    .order("fecha", { ascending: false })
+                    .order("creado_en", { ascending: false })
+                    .order("id", { ascending: false });
+
+                if (error) throw error;
+
+                return formatearFlores(data || []);
+            },
+            async () => {
+                const data = await dbAll(
+                    `SELECT id, cantidad, fecha, nota, creado_por, creado_en
+                     FROM flores
+                     ORDER BY fecha DESC, creado_en DESC, id DESC`
+                );
+
+                return formatearFlores(data);
+            }
+        );
+
+        res.json(flores || { total: 0, registros: [] });
+    } catch (error) {
+        responderError(res, "CARGAR FLORES", "Error al cargar flores", error);
+    }
+});
+
+app.post("/flores", protegerRuta, protegerMichel, async (req, res) => {
+    const cantidad = validarCantidadFlores(req.body.cantidad);
+    const fecha = limpiarTexto(req.body.fecha) || new Date().toISOString().slice(0, 10);
+    const nota = limpiarTexto(req.body.nota).slice(0, 240);
+    const creadoPor = req.session.usuario;
+
+    if (!cantidad) {
+        return res.status(400).json({
+            mensaje: "La cantidad debe ser un número entre 1 y 999"
+        });
+    }
+
+    try {
+        await ejecutarConFallback(
+            "guardar flores",
+            () => supabase
+                .from("flores")
+                .insert([{
+                    cantidad,
+                    fecha,
+                    nota,
+                    creado_por: creadoPor
+                }]),
+            () => dbRun(
+                `INSERT INTO flores (cantidad, fecha, nota, creado_por)
+                 VALUES (?, ?, ?, ?)`,
+                [cantidad, fecha, nota, creadoPor]
+            )
+        );
+
+        programarRespaldoAutomatico();
+
+        res.json({
+            mensaje: cantidad === 1
+                ? "Flor sumada para Len 🌷"
+                : "Flores sumadas para Len 🌷"
+        });
+    } catch (error) {
+        responderError(res, "GUARDAR FLORES", "Error al guardar flores", error);
+    }
+});
+
+app.delete("/flores/:id", protegerRuta, protegerMichel, async (req, res) => {
+    const id = validarId(req.params.id);
+
+    if (!id) {
+        return res.status(400).json({
+            mensaje: "Id de flores inválido"
+        });
+    }
+
+    try {
+        await ejecutarConFallback(
+            "eliminar flores",
+            () => supabase
+                .from("flores")
+                .delete()
+                .eq("id", id),
+            () => dbRun("DELETE FROM flores WHERE id = ?", [id])
+        );
+
+        programarRespaldoAutomatico();
+
+        res.json({
+            mensaje: "Registro de flores eliminado"
+        });
+    } catch (error) {
+        responderError(res, "ELIMINAR FLORES", "Error al eliminar flores", error);
     }
 });
 

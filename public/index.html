@@ -20,6 +20,7 @@
 
     <nav class="menu-principal" aria-label="Menú principal">
         <a href="#inicio">Inicio</a>
+        <a href="#flores">Flores</a>
         <a href="#calendario-panel">Calendario</a>
         <a href="#eventos">Eventos</a>
         <a href="#album">Álbum</a>
@@ -52,6 +53,46 @@
                 <p>Días para aniversario</p>
             </div>
         </div>
+    </section>
+
+    <section class="flores panel" id="flores">
+        <div class="section-heading">
+            <span>🌷</span>
+            <h2>Flores para Len</h2>
+        </div>
+
+        <div class="flores-resumen">
+            <div>
+                <span id="totalFlores">0</span>
+                <p>veces que Michel le ha dado flores a Len</p>
+            </div>
+        </div>
+
+        <form id="formFlores" class="oculto">
+            <label>¿Cuántas veces sumamos?</label>
+            <input
+                type="number"
+                id="cantidadFlores"
+                min="1"
+                max="999"
+                value="1"
+                required
+            >
+
+            <label>Fecha</label>
+            <input type="date" id="fechaFlores" required>
+
+            <label>Nota</label>
+            <textarea
+                id="notaFlores"
+                rows="3"
+                placeholder="Ejemplo: Rositas por nuestro día bonito"
+            ></textarea>
+
+            <button type="submit">Sumar flores</button>
+        </form>
+
+        <div id="listaFlores"></div>
     </section>
 
     <section class="calendario panel" id="calendario-panel">

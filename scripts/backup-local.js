@@ -65,6 +65,7 @@ async function main() {
             fotos: await dbAll(db, "SELECT * FROM fotos ORDER BY id ASC"),
             notas: await dbAll(db, "SELECT * FROM notas ORDER BY creado_en ASC, id ASC"),
             lugares: await dbAll(db, "SELECT * FROM lugares ORDER BY id ASC"),
+            flores: await dbAll(db, "SELECT * FROM flores ORDER BY fecha ASC, creado_en ASC, id ASC"),
             retos: await dbAll(db, "SELECT * FROM retos ORDER BY creado_en ASC, id ASC"),
             reto_objetivos: await dbAll(db, "SELECT * FROM reto_objetivos ORDER BY reto_id ASC, id ASC")
         };

@@ -83,6 +83,17 @@ async function inicializarBaseLocal() {
     `);
 
     await dbRun(`
+        CREATE TABLE IF NOT EXISTS flores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cantidad INTEGER DEFAULT 1,
+            fecha TEXT,
+            nota TEXT,
+            creado_por TEXT,
+            creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    await dbRun(`
         CREATE TABLE IF NOT EXISTS retos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             titulo TEXT,
@@ -231,6 +242,28 @@ async function importarFotos() {
     console.log(`Fotos importadas: ${fotos.length}`);
 }
 
+async function importarFlores() {
+    const flores = await consultarTabla("flores");
+
+    for (const flor of flores) {
+        await dbRun(
+            `INSERT OR REPLACE INTO flores
+             (id, cantidad, fecha, nota, creado_por, creado_en)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+                flor.id,
+                Number(flor.cantidad) || 1,
+                flor.fecha || "",
+                flor.nota || "",
+                flor.creado_por || "",
+                flor.creado_en || new Date().toISOString()
+            ]
+        );
+    }
+
+    console.log(`Flores importadas: ${flores.length}`);
+}
+
 async function importarRetos() {
     const retos = await consultarTabla("retos");
 
@@ -282,6 +315,7 @@ async function main() {
     await importarNotas();
     await importarLugares();
     await importarFotos();
+    await importarFlores();
     await importarRetos();
     await importarObjetivosRetos();
     console.log("Importacion desde Supabase terminada.");
