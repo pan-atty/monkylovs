@@ -1004,7 +1004,7 @@ async function revisarEventosProximos(mostrarNotificacion = false, eventosCargad
             ) {
                 new Notification("Agenda de Michel ❤️ Len", {
                     body: `Mañana tienen: ${evento.actividad} a las ${evento.hora}`,
-                    icon: "/icon-192.png"
+                    icon: "/icon-couple-192.png"
                 });
             }
         }
