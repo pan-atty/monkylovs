@@ -441,6 +441,22 @@ function validarCantidadFlores(valor) {
     return cantidad;
 }
 
+function fechaActualAgenda() {
+    const partes = new Intl.DateTimeFormat("es-MX", {
+        timeZone: "America/Mexico_City",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).formatToParts(new Date());
+    const valores = Object.fromEntries(
+        partes
+            .filter(parte => parte.type !== "literal")
+            .map(parte => [parte.type, parte.value])
+    );
+
+    return `${valores.year}-${valores.month}-${valores.day}`;
+}
+
 function formatearFlores(registros = []) {
     const lista = registros.map(flor => ({
         id: flor.id,
@@ -1178,8 +1194,8 @@ app.get("/flores", protegerRuta, async (req, res) => {
 
 app.post("/flores", protegerRuta, protegerMichel, async (req, res) => {
     const cantidad = validarCantidadFlores(req.body.cantidad);
-    const fecha = limpiarTexto(req.body.fecha) || new Date().toISOString().slice(0, 10);
-    const nota = limpiarTexto(req.body.nota).slice(0, 240);
+    const fecha = fechaActualAgenda();
+    const nota = "";
     const creadoPor = req.session.usuario;
 
     if (!cantidad) {

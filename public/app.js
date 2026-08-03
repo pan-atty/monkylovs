@@ -51,14 +51,6 @@ function listaSegura(datos) {
     return Array.isArray(datos) ? datos : [];
 }
 
-function fechaLocalIso(fecha = new Date()) {
-    const anio = fecha.getFullYear();
-    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-    const dia = String(fecha.getDate()).padStart(2, "0");
-
-    return `${anio}-${mes}-${dia}`;
-}
-
 function cargarImagenDesdeArchivo(archivo) {
     return new Promise((resolve, reject) => {
         const url = URL.createObjectURL(archivo);
@@ -153,8 +145,6 @@ function registrarEventosFormulario() {
         document.getElementById("formReto").classList.remove("oculto");
         document.getElementById("formFlores").classList.remove("oculto");
     }
-
-    document.getElementById("fechaFlores").value = fechaLocalIso();
 
     document.addEventListener("click", function(evento) {
         if (evento.target.matches(".foto-card img")) {
@@ -503,20 +493,6 @@ function cargarPerfilPareja() {
     document.getElementById("diasAniversario").textContent = diasAniversario;
 }
 
-function fechaBonita(fecha) {
-    if (!fecha) return "Sin fecha";
-
-    const fechaObj = new Date(`${fecha}T00:00:00`);
-
-    if (Number.isNaN(fechaObj.getTime())) return fecha;
-
-    return fechaObj.toLocaleDateString("es-MX", {
-        day: "numeric",
-        month: "short",
-        year: "numeric"
-    });
-}
-
 async function guardarFlores(evento) {
     evento.preventDefault();
 
@@ -526,9 +502,7 @@ async function guardarFlores(evento) {
     }
 
     const datos = {
-        cantidad: Number(document.getElementById("cantidadFlores").value || 1),
-        fecha: document.getElementById("fechaFlores").value,
-        nota: document.getElementById("notaFlores").value
+        cantidad: Number(document.getElementById("cantidadFlores").value || 1)
     };
 
     if (!Number.isInteger(datos.cantidad) || datos.cantidad < 1) {
@@ -548,7 +522,6 @@ async function guardarFlores(evento) {
         alert(resultado.mensaje);
         document.getElementById("formFlores").reset();
         document.getElementById("cantidadFlores").value = "1";
-        document.getElementById("fechaFlores").value = fechaLocalIso();
         await cargarFlores();
     } catch (error) {
         mostrarError(error);
@@ -583,8 +556,6 @@ async function cargarFlores() {
             div.innerHTML = `
                 <div>
                     <h3>${cantidad === 1 ? "1 vez con flores" : `${cantidad} veces con flores`}</h3>
-                    <p>${fechaBonita(flor.fecha)}</p>
-                    ${flor.nota ? `<p>${escaparHtml(flor.nota)}</p>` : ""}
                 </div>
 
                 ${usuarioActual === "michel" ? `
